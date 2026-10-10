@@ -5,3 +5,5 @@ dist/
 *.log
 test-results/
 .playwright/
+.vercel/
+.env.*.local
