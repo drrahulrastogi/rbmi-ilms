@@ -2,7 +2,7 @@ import {test,before,after} from 'node:test';import assert from 'node:assert/stri
 let db;const action=async(a,p={},i='RBCET')=>(await db.query('select public.library_action($1,$2,$3) d',[i,a,p])).rows[0].d;
 const snapshot=async(i='RBCET')=>(await db.query('select public.library_snapshot($1) d',[i])).rows[0].d;
 const as=async(role)=>db.query("select set_config('request.jwt.claim.sub',$1,false)",[actors[role]]);
-before(async()=>{db=new PGlite();await db.exec(authStub);await db.exec(await readFile('supabase/migrations/202610090001_library.sql','utf8'));await db.exec(await readFile('supabase/seed.sql','utf8'));await seedDemo(db);});after(async()=>db.close());
+before(async()=>{db=new PGlite();await db.exec(authStub);await db.exec(await readFile('supabase/migrations/202610090001_library.sql','utf8'));await db.exec(await readFile('supabase/seed.sql','utf8'));await seedDemo(db);await db.exec('create role service_role');await db.exec(await readFile('supabase/migrations/202610100002_password_management.sql','utf8'));});after(async()=>db.close());
 test('schema, five institutions and isolation',async()=>{assert.equal((await db.query('select count(*) n from app.institutions')).rows[0].n,5);let s=await snapshot();assert.equal(s.titles.length,8);assert.ok(s.copies.every(c=>c.institution_id==='RBCET'));await db.query("select set_config('request.jwt.claim.sub','99999999-0000-0000-0000-000000000000',false)");await assert.rejects(snapshot(),/Access denied/);await as('admin');});
 test('calendar-aware fines: Sunday + holiday excluded, grace and cap',async()=>{await action('holiday',{day:'2026-10-05',name:'Test holiday'});const pol={fine_cap:100,grace_days:1,fine_rate:2,exclude_weekends:true};let r=await db.query("select app.fine_for('RBCET','2026-10-02','2026-10-09',$1) f",[pol]);assert.equal(Number(r.rows[0].f),6);r=await db.query("select app.fine_for('RBCET','2026-10-02','2026-10-09',$1) f",[{...pol,fine_cap:3}]);assert.equal(Number(r.rows[0].f),3);});
 test('issue, duplicate issue rejected, renewal and return',async()=>{let s=await snapshot();const c=s.copies.find(c=>c.status==='available');const p=s.patrons.find(p=>p.code==='RBCET-S008');const l=await action('issue',{barcode:c.barcode,patron_code:p.code});await assert.rejects(action('issue',{barcode:c.barcode,patron_code:p.code}),/not available/);await action('renew',{id:l.id});s=await snapshot();assert.equal(s.loans.find(x=>x.id===l.id).renewals,1);await action('return',{id:l.id});await assert.rejects(action('return',{id:l.id}),/already returned/);assert.equal((await snapshot()).copies.find(x=>x.id===c.id).status,'available');});
@@ -18,3 +18,19 @@ test('membership expiry, inactive and loan cap',async()=>{await action('patron',
 test('patron hold ownership and no institution membership outside assignment',async()=>{await as('patron');let s=await snapshot();await action('hold',{title_id:s.titles[5].id,patron_code:s.patrons[0].code});s=await snapshot();const h=s.holds.find(h=>h.title_id===s.titles[5].id);await action('cancel_hold',{id:h.id});await as('admin');await db.query("delete from app.memberships where user_id=$1 and institution_id='RBTTI'",[actors.auditor]);await as('auditor');await assert.rejects(snapshot('RBTTI'),/Access denied/);await as('admin');});
 test('RPC is callable as authenticated while anonymous execution denied',async()=>{await db.exec('set role authenticated');assert.ok((await snapshot()).patrons.length>0);await db.exec('reset role');await db.exec('set role anon');await assert.rejects(snapshot(),/permission denied/);await db.exec('reset role');});
 
+
+test('password authorization enforces admin, target membership, own account and every campus',async()=>{
+ const authorize=()=>db.query("select public.library_password_authorize('RBCET',$1)",[actors.librarian]);
+ await as('auditor');await assert.rejects(authorize(),/Access denied/);
+ await as('admin');assert.equal((await authorize()).rows[0].library_password_authorize,true);
+ await assert.rejects(db.query("select public.library_password_authorize('RBCET',$1)",[actors.admin]),/own account/);
+ await db.query("delete from app.memberships where user_id=$1 and institution_id='RBMI'",[actors.admin]);
+ await assert.rejects(authorize(),/every institution/);
+ await db.query("insert into app.memberships(user_id,institution_id,role) values($1,'RBMI','admin')",[actors.admin]);
+ await assert.rejects(db.query("select public.library_password_authorize('RBCET','99999999-0000-0000-0000-000000000000')"),/not assigned/);
+});
+test('password audit restricted to server service role, records no secrets',async()=>{
+ await db.exec('set role authenticated');await assert.rejects(db.query("select public.library_password_audit('RBCET',$1,$2,'password_reset')",[actors.admin,actors.librarian]),/permission denied/);await db.exec('reset role');
+ await db.exec('set role service_role');await db.query("select public.library_password_audit('RBCET',$1,$2,'password_reset')",[actors.admin,actors.librarian]);await db.exec('reset role');
+ const audit=(await snapshot()).audit.filter(a=>a.action==='password_reset').at(-1);assert.deepEqual(audit.details,{target_user_id:actors.librarian});
+});

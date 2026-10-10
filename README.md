@@ -65,3 +65,7 @@ The script verifies a newly produced nonempty `docs/help/RBMI.chm`. No compiled 
 - `package-lock.json`: reproducible dependencies.
 
 Known scope: institution snapshots load all accessible rows; plan pagination before very large catalogues/audit history. Holds use a manual FIFO queue without notification emails. Acquisition receipt is full quantity. Lost copies do not automatically create replacement charges. See architecture/manual for exact policy semantics and acceptance steps.
+
+## Password management
+
+Administrators can reset assigned users through Settings → Institution access. Every signed-in role can use Change my password in the sidebar. Both operations require the caller's current password. See [password-management.md](docs/password-management.md) for instructions and the required server-only environment variable and migration.
