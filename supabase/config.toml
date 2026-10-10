@@ -1,0 +1,15 @@
+project_id = "rbmi-ilms"
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+[db]
+port = 54322
+major_version = 15
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+enable_signup = false

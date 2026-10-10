@@ -1,0 +1,15 @@
+{
+  "passed": [
+    "PostgreSQL browser demo seeded with 24 copies",
+    "Catalogue search",
+    "Create catalogue title through SQL RPC",
+    "Issue barcode to patron",
+    "Renew and return through UI",
+    "CSV preview and atomic student import",
+    "All navigation modules render",
+    "Institution-scoped data switching",
+    "Auditor/patron UI permission boundaries",
+    "390px responsive overview and catalogue"
+  ],
+  "errors": []
+}
