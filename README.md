@@ -2,6 +2,12 @@
 
 Modern React application for RBCET, RBMI, RBCP, RBCN and RBTTI. PostgreSQL is the backend, with Supabase Auth and transactional RPCs. Includes catalogue/copies, patrons, circulation, holds, holiday-aware fines, payments/waivers, bulk CSV upload, acquisitions, stock verification, exports, roles, audit and complete help sources.
 
+## Current deployment
+
+The production frontend is https://rbmi-ilms.vercel.app with shared Supabase PostgreSQL and email/password Auth. Six initial RBCET accounts were provisioned on 10 October 2026. Other campuses require assigned memberships. Credentials are provided privately to the owner; no passwords or administrative keys are committed. Use `docs/help/user-guide.html` and `docs/help/user-guide.pdf` for the updated complete manual. Vercel deploys through its linked CLI checkout; GitHub-to-Vercel automatic deployment is not connected.
+
+Hosted acceptance checked all six sign-ins, cross-account record sharing, circulation, campus restrictions, patron privacy, disabled public signup and audit records. Temporary acceptance catalogue/loan data was removed. One fictional patron profile remains linked to the sample patron Auth account.
+
 ## Run the working demonstration
 
 Install Node.js 20.16 or newer. Extract this project to a local folder, open PowerShell there and run:

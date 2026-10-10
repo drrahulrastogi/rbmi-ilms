@@ -7,3 +7,6 @@ test-results/
 .playwright/
 .vercel/
 .env.*.local
+supabase/.temp/
+
+.vercel
