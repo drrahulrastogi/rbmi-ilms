@@ -26,3 +26,47 @@ test('paged workspace holds no collection payload and keyset pages enforce autho
 test('anonymous catalogue search limits results and only exposes matching holdings',async()=>{await db.exec('set role anon');const d=(await db.query("select public.library_catalogue_search('RBCET','',2) d")).rows[0].d;assert.equal(d.titles.length,2);assert.equal(d.has_more,true);assert.ok(d.copies.every(c=>d.titles.some(t=>t.id===c.title_id)&&!('price' in c)));assert.equal(d.libraries.length,4);const none=(await db.query("select public.library_catalogue_search('RBCET','NEVER-MATCH-RELEASE-XYZ',40) d")).rows[0].d;assert.equal(none.titles.length,0);assert.equal(none.copies.length,0);await db.exec('reset role');});
 
 test('RBGN has independent policies, librarian access, availability and circulation',async()=>{await as();let s=await snap('RBGN');assert.equal(s.copies.length,0);assert.equal(s.patrons.length,0);assert.equal(s.policies.length,5);const id='00000000-0000-0000-0000-000000000009';await db.query('insert into auth.users values($1)',[id]);await action('assign_librarian',{user_id:id,display_name:'RBGN Librarian'},'RBGN');await as(id);const b=(await db.query('select public.library_bootstrap() d')).rows[0].d;assert.deepEqual(b.memberships.map(m=>m.institution_id),['RBGN']);await assert.rejects(snap('RBCET'),/Access denied/);const day=(await db.query('select (app.today()+1)::text d')).rows[0].d;await action('availability',{day,available:false,reason:'RBGN closure'},'RBGN');await as();assert.ok(!(await snap('RBCP')).availability.some(a=>a.day===day));await as(id);await action('patron',{code:'RBGN-TEST',name:'Test patron',category:'student',active:true},'RBGN');const t=await action('title',{title:'RBGN test book',author:'Test author'},'RBGN');await action('copy',{title_id:t.id,accession:'RBGN-TEST',barcode:'RBGN-TEST'},'RBGN');const loan=await action('issue',{library_code:'RBGN',barcode:'RBGN-TEST',patron_code:'RBGN-TEST'},'RBGN');assert.equal(loan.issue_library_code,'RBGN');await as();await assert.rejects(action('return',{id:loan.id,library_code:'RBCET'}),/issuing library/);await as(id);await action('return',{id:loan.id,library_code:'RBGN'},'RBGN');await as();});
+
+test('bulk holiday calendar is atomic, rejects invalid rows and preserves existing dates',async()=>{await as();await db.exec('begin');try{
+ const rows=[{day:'2040-01-02',name:'Approved closure'},{day:'2040-01-03',name:'Annual holiday'}];
+ const result=await action('holiday_import',{rows},'RBGN');assert.equal(result.imported,2);
+ await action('holiday_import',{rows:[{day:'2040-01-02',name:'Corrected holiday name'}]},'RBGN');
+ assert.equal((await db.query("select count(*) n from app.holidays where institution_id='RBGN' and day between '2040-01-02' and '2040-01-03'")).rows[0].n,2);
+ assert.equal((await db.query("select name from app.holidays where institution_id='RBGN' and day='2040-01-02'")).rows[0].name,'Corrected holiday name');
+ assert.ok((await snap('RBGN')).audit.some(a=>a.action==='holiday_import'&&a.details.imported===2));
+ for(const invalid of [[{day:'2040-01-04',name:'Must rollback'},{day:'2040-02-30',name:'Bad'}],[{day:'2040-01-04',name:'A'},{day:'2040-01-04',name:'B'}],[{day:'2040-01-04',name:' '}],[],null,Array(1001).fill(rows[0])]){
+  await db.exec('savepoint invalid_row');await assert.rejects(action('holiday_import',{rows:invalid},'RBGN'));await db.exec('rollback to savepoint invalid_row');
+ }
+ assert.equal((await db.query("select count(*) n from app.holidays where institution_id='RBGN' and day='2040-01-04'")).rows[0].n,0);
+ await assert.rejects(action('holiday',{day:'2040-01-04',name:''},'RBGN'),/holiday name/);
+}finally{await db.exec('rollback');}});
+
+test('holiday uploads and additional days require admin even when called directly',async()=>{await as();for(const id of [actors.librarian,actors.assistant,actors.accountant,actors.auditor,actors.patron]){await as(id);await assert.rejects(action('holiday_import',{rows:[{day:'2040-02-01',name:'Not authorized'}]}),/Access denied/);await assert.rejects(action('holiday',{day:'2040-02-01',name:'Not authorized'}),/Access denied/);}await as();});
+
+test('bulk and additional holidays exclude fine days only in their own library and move due dates',async()=>{await as();await db.exec('begin');try{
+ const pol={fine_cap:100,fine_rate:10,grace_days:0,exclude_weekends:false};
+ const fine=async i=>Number((await db.query("select app.fine_for($1,'2040-01-01','2040-01-04',$2) f",[i,pol])).rows[0].f);
+ assert.equal(await fine('RBGN'),30);await action('holiday_import',{rows:[{day:'2040-01-02',name:'Uploaded holiday'}]},'RBGN');assert.equal(await fine('RBGN'),20);
+ await action('holiday',{day:'2040-01-03',name:'Unplanned admin closure'},'RBGN');assert.equal(await fine('RBGN'),10);assert.equal(await fine('RBCP'),30);
+ assert.equal((await db.query("select app.open_date('RBGN','2040-01-02',false)::text d")).rows[0].d,'2040-01-04');
+}finally{await db.exec('rollback');}});
+
+
+test('faculty bulk import preserves institute and profile and applies faculty category',async()=>{await as();await db.exec('begin');try{
+ const r=await action('import',{kind:'faculty',rows:[{code:'QA-FAC-1',name:'Test faculty',email:'faculty@example.invalid',institute:'RBMI',department:'Management',expires:' ',active:true,designation:'Professor'},{code:'QA-FAC-2',name:'Engineering faculty',institute:'RBCET',active:true}]});assert.equal(r.imported,2);
+ let s=await snap();let p=s.patrons.find(p=>p.code==='QA-FAC-1');assert.equal(p.category,'faculty');assert.equal(p.profile.institute,'RBMI');assert.equal(p.profile.designation,'Professor');assert.equal(p.institution_id,'RBCET');
+ await action('patron',{code:'QA-FAC-1',name:'Updated faculty',category:'faculty',institute:'RBCET',department:'CSE',active:true});p=(await snap()).patrons.find(p=>p.code==='QA-FAC-1');assert.equal(p.profile.institute,'RBCET');assert.equal(p.profile.designation,'Professor');
+ assert.ok(!(await snap('RBCP')).patrons.some(p=>p.code==='QA-FAC-1'));
+}finally{await db.exec('rollback');}});
+
+test('faculty import rejects wrong institute and accidental student-code overwrite atomically',async()=>{await as();await db.exec('begin');try{
+ for(const rows of [[{code:'QA-FAC-3',name:'Valid',institute:'RBCET'},{code:'QA-FAC-4',name:'Wrong campus',institute:'RBCP'}],[{code:'QA-FAC-3',name:'Valid'},{code:'QA-FAC-3',name:'Duplicate'}],[{code:'RBCET-S008',name:'Would overwrite student'}]]){await db.exec('savepoint bad_faculty');await assert.rejects(action('import',{kind:'faculty',rows}));await db.exec('rollback to savepoint bad_faculty');}
+ assert.equal((await snap()).patrons.filter(p=>p.code==='QA-FAC-3').length,0);assert.equal((await snap()).patrons.find(p=>p.code==='RBCET-S008').category,'student');
+}finally{await db.exec('rollback');}});
+
+test('librarian can add faculty individually and in bulk only to assigned library',async()=>{await as(lib2);await db.exec('begin');try{
+ await action('patron',{code:'QA-P-F1',name:'Pharmacy faculty',category:'faculty',institute:'RBCP',active:true},'RBCP');
+ await action('import',{kind:'faculty',rows:[{code:'QA-P-F2',name:'Second pharmacy faculty',institute:'RBCP'}]},'RBCP');
+ assert.equal((await snap('RBCP')).patrons.filter(p=>p.code.startsWith('QA-P-F')).length,2);
+ await db.exec('savepoint forbidden_faculty');await assert.rejects(action('import',{kind:'faculty',rows:[{code:'QA-X',name:'No access'}]},'RBCET'),/Access denied/);await db.exec('rollback to savepoint forbidden_faculty');
+}finally{await db.exec('rollback');await as();}});

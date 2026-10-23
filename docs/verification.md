@@ -17,3 +17,6 @@ Hosted browser verification found an initial large-snapshot timeout. Migration 2
 Final scaling change: secure keyset pages load staff holdings in bounded responses, and OPAC uses server-filtered result pages. Auth refresh no longer reloads the workspace for the same user; an authenticated OPAC visit does not load private staff holdings. Both pagination/isolation tests passed (34 tests total).
 
 RBGN extension: a fourth independent library and fifth-category policy set are added by migration 20261023143719. The network administrator receives RBGN membership. A dedicated local acceptance test verifies RBGN-only librarian access, its own availability calendar, issue provenance and rejection of returns at RBCET (35 tests total). Live librarian identity: raveena@rbmi.in. Administrator recovery was completed by the owner without sharing the new password.
+
+## Holiday and faculty update — 23 October 2026
+43 tests pass. Bulk holiday upload validates ISO dates, names, duplicates and row limits atomically; admin-only upload and additional holidays exclude fine days per library. Faculty bulk/individual entry records institute within the assigned library, preserves profiles and uses faculty rules; accidental student-code overwrite and cross-library access are rejected. CSV templates and previews are provided.

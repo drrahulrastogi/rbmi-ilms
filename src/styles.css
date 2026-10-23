@@ -9,3 +9,4 @@
 .search-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:15px;padding:20px}.search-filters label{display:grid;gap:6px;font-size:13px}.search-filters input,.search-filters select{padding:9px;border:1px solid #d4dfd8;border-radius:6px;width:100%}.sidebar nav{overflow:auto;min-height:100px}.sidebar-bottom{flex-shrink:0}
 
 .public-catalogue{max-width:1300px;margin:auto;padding:28px}.public-catalogue header{display:flex;align-items:center;gap:24px;margin-bottom:25px;flex-wrap:wrap}.public-catalogue header img{width:220px;height:auto}.public-catalogue header h1{font-size:27px}.public-catalogue .copy-card{margin:10px 20px}
+.holiday-import{padding:0 20px 20px;line-height:1.6}.holiday-import label{display:grid;gap:8px;max-width:480px;margin:16px 0}.holiday-import input{max-width:100%;padding:10px;border:1px solid #d4dfd8;border-radius:6px}.holiday-import code{overflow-wrap:anywhere}
