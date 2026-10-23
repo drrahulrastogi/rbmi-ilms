@@ -8,7 +8,7 @@ Open https://rbmi-ilms.vercel.app in a current browser. RBMI ILMS 2.0 uses React
 
 1. Sign in with your registered email and private password. Verify that the connection indicator says Supabase connected.
 2. Select RBCET for the shared RBCET / RBMI Central Library, RBCP for Pharmacy, or RBCN for Nursing. RBMI is a campus in the shared library, not a fourth issue desk.
-3. The single network administrator is rahul.r@rbmi.in and manages all three libraries. Nidhi Dewal, nidhi@rbmi.in, serves RBCET/RBMI. Rekha, rekha@rbmi.in, serves RBCP. Sheeba, sheeba@rbmi.in, serves RBCN.
+3. The single network administrator is rahul.r@rbmi.in and manages all four libraries. Nidhi Dewal, nidhi@rbmi.in, serves RBCET/RBMI. Rekha, rekha@rbmi.in, serves RBCP. Sheeba, sheeba@rbmi.in, serves RBCN.
 4. Use the sidebar modules. On a phone open the navigation menu. Refresh data to see a colleague's recent changes. Sign out before leaving a shared computer.
 
 A yellow Sample data banner means an isolated browser demonstration with fictional records. Live staff must use the Supabase-connected deployment.

@@ -2,7 +2,7 @@
 
 React 19 / Vite, Supabase PostgreSQL and Auth, and Vercel server functions. Live application: https://rbmi-ilms.vercel.app . Source: https://github.com/drrahulrastogi/rbmi-ilms .
 
-Three physical libraries: RBCET (shared RBCET/RBMI Central Library), RBCP and RBCN. One administrator, rahul.r@rbmi.in, manages the network. Distinct designated librarians operate each library. Passwords and private data are never committed.
+Four physical libraries: RBCET (shared RBCET/RBMI Central Library), RBCP, RBCN and RBGN. One administrator, rahul.r@rbmi.in, manages the network. Distinct designated librarians operate each library. Passwords and private data are never committed.
 
 ## Features
 Bibliographic records separate from accession/barcoded copies; patron profiles; issue/return/renewal/holds; saved circulation policies; holiday/weekend and dated librarian-unavailability fine exclusions; payments/waivers; issue library/operator snapshots and enforced same-library return; CSV and UTF-8 MARC imports; acquisitions/budgets/funds/baskets; authorities; public/private reading lists; serial predictions/receiving; advanced/item search; anonymous OPAC; stock verification; safe saved reports/CSV; audit; staff account management and email recovery for every role.
