@@ -1,5 +1,5 @@
 # Database setup
-For a **new Supabase project**, run install-new-supabase.sql once in trusted SQL Editor. It creates all five application migrations and seeds the legacy institution/policy rows, then consolidates them into three active libraries. Supabase supplies auth.users and platform roles. Do not run schema.sql and the installer together.
+For a **new Supabase project**, run install-new-supabase.sql once in trusted SQL Editor. It creates all six application migrations and seeds the legacy institution/policy rows, then consolidates them into three active libraries. Supabase supplies auth.users and platform roles. Do not run schema.sql and the installer together.
 
 Create the first Auth user rahul.r@rbmi.in, disable public signup while keeping email/password login enabled, and run scripts/bootstrap-admin.sql with its UUID. This creates one network administrator with access to all active libraries. Create individual staff in the app Settings after configuring server credentials. Configure SMTP and the recovery redirect before distributing accounts.
 

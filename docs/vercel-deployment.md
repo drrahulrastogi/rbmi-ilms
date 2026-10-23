@@ -32,4 +32,3 @@ Email recovery is available to every role, including the administrator, through 
 Staff cannot reset the administrator; the administrator recovers through their own registered email.
 
 Old passwords cannot be read from Supabase. Passwords are excluded from audit records, GitHub and public source downloads. An initial-password file becomes stale after users change their passwords.
-

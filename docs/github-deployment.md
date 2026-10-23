@@ -17,4 +17,3 @@ The source repository is drrahulrastogi/rbmi-ilms. The UI and account endpoints 
 PostgreSQL provides transactional circulation and unique identifiers. Supabase supplies managed database/Auth and Vercel serves the UI and server endpoints.
 
 Free plans have quotas and provider-controlled pause/retention rules. Check dashboards before scaling. No paid upgrade is enabled by this release.
-

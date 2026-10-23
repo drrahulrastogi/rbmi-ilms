@@ -47,4 +47,3 @@ The public source package includes schema and fictional seeds, not live students
 The pre-upgrade database backup is stored privately in the workspace. A full disaster-recovery restore drill has not been performed for this release.
 
 Clearing browser storage removes local demonstration records, not live Supabase data.
-

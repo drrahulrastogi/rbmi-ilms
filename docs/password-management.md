@@ -31,4 +31,3 @@ Permissions are enforced by the database using memberships and designated librar
 The create-account form supports librarian, assistant, accountant and auditor roles. Library records and Auth users are separate entities.
 
 Retained sample accounts ending in .invalid cannot receive recovery emails. Replace them with real individual accounts before operational use.
-

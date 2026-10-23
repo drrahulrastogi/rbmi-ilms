@@ -60,4 +60,3 @@ The supplied Koha documentation informed the acquisition, advanced/item search, 
 Outside scope: offline circulation, RFID/SIP2, EDI, SSO, federated discovery, complex serial schedules, automated claims/hold emails, purchase suggestions, reviews/tags, partial receipts and full MARC editing/export.
 
 Same-library returns intentionally prevent inter-library returns. Report errors without sharing passwords, private keys or student exports.
-
