@@ -1,71 +1,31 @@
-# RBMI Integrated Library Management System
+# RBMI Integrated Library Management System 2.0
 
-Modern React application for RBCET, RBMI, RBCP, RBCN and RBTTI. PostgreSQL is the backend, with Supabase Auth and transactional RPCs. Includes catalogue/copies, patrons, circulation, holds, holiday-aware fines, payments/waivers, bulk CSV upload, acquisitions, stock verification, exports, roles, audit and complete help sources.
+React 19 / Vite, Supabase PostgreSQL and Auth, and Vercel server functions. Live application: https://rbmi-ilms.vercel.app . Source: https://github.com/drrahulrastogi/rbmi-ilms .
 
-## Current deployment
+Three physical libraries: RBCET (shared RBCET/RBMI Central Library), RBCP and RBCN. One administrator, rahul.r@rbmi.in, manages the network. Distinct designated librarians operate each library. Passwords and private data are never committed.
 
-The production frontend is https://rbmi-ilms.vercel.app with shared Supabase PostgreSQL and email/password Auth. Six initial RBCET accounts were provisioned on 10 October 2026. Other campuses require assigned memberships. Credentials are provided privately to the owner; no passwords or administrative keys are committed. Use `docs/help/user-guide.html` and `docs/help/user-guide.pdf` for the updated complete manual. Vercel deploys through its linked CLI checkout; GitHub-to-Vercel automatic deployment is not connected.
+## Features
+Bibliographic records separate from accession/barcoded copies; patron profiles; issue/return/renewal/holds; saved circulation policies; holiday/weekend and dated librarian-unavailability fine exclusions; payments/waivers; issue library/operator snapshots and enforced same-library return; CSV and UTF-8 MARC imports; acquisitions/budgets/funds/baskets; authorities; public/private reading lists; serial predictions/receiving; advanced/item search; anonymous OPAC; stock verification; safe saved reports/CSV; audit; staff account management and email recovery for every role.
 
-Hosted acceptance checked all six sign-ins, cross-account record sharing, circulation, campus restrictions, patron privacy, disabled public signup and audit records. Temporary acceptance catalogue/loan data was removed. One fictional patron profile remains linked to the sample patron Auth account.
+## Run locally
+Install Node.js >=20.16, then run npm ci and npm run dev. Without both Supabase variables the app starts a fictional browser-local PostgreSQL demonstration. It downloads a substantial runtime on first load. It is not live Auth; do not enter private operational records there.
 
-## Run the working demonstration
+Run npm test and npm run build for validation. npm run preview serves a production build. scripts/start-windows.cmd helps on Windows.
 
-Install Node.js 20.16 or newer. Extract this project to a local folder, open PowerShell there and run:
+## Deploy a complete installation
+1. Follow database/README.md. In a NEW Supabase project, run database/install-new-supabase.sql once, create the administrator Auth user and apply scripts/bootstrap-admin.sql with its UUID.
+2. Disable public signup, retain email/password login, set Auth Site URL to the HTTPS deployment, allow /?recovery=1, configure SMTP, and require strong 12-character passwords.
+3. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY as a sensitive server-only Production variable in Vercel, never with a VITE_ prefix.
+4. Deploy this repository root as Vite with vercel.json. It runs npm test and npm run build and publishes the UI plus api/password.js and api/accounts.js. Static-only GitHub Pages cannot provide these server endpoints.
+5. Confirm intended Vercel scope/project before deploying. Current production uses the linked Vercel CLI project rbmi-ilms, scope engg1. CLI release is used; GitHub automatic deployment is not assumed.
+6. Verify sign-in, isolation, recovery, issue/return/fines and backups before opening a new installation for staff.
 
-```powershell
-npm ci
-npm run dev
-```
+## Manuals and Windows CHM
+Open docs/help/index.html, docs/help/user-guide.pdf or printable.html. The 24-section manual describes actual workflows and limitations. The live site serves it at /manual/ .
 
-Open the URL printed by Vite, normally `http://127.0.0.1:5173`. The first load boots browser-local PostgreSQL and fictional sample records. It can take several seconds and downloads about 14 MB of demo runtime. Data persists in this browser's IndexedDB. No password is needed in demo mode. The role selector demonstrates server permission rules with mock users; it is not real authentication.
+Run scripts/build-chm.ps1 after installing Microsoft HTML Help Workshop, or pass -Compiler with the full hhc.exe path. Complete .hhp/.hhc/.hhk/HTML/assets are included. A compiled CHM is supplied only when an installed compiler can produce and verify it.
 
-For Windows, `scripts\start-windows.cmd` runs installation and starts development. To build: `npm run build`; to serve the build: `npm run preview`. Do not open `dist/index.html` using file://.
+## Data, security and scope
+Real RBCET students and Central Library holdings are imported privately into the hosted database. This repository and source ZIP contain schema, policy seed and fictional demo records only. Protected import archives preserve source fields and provenance. Anonymous OPAC excludes students, accounts, fines and prices. All private tables deny direct API-role access; RPCs enforce membership.
 
-## Deploy live
-
-1. Create a free Supabase project owned by RBMI. In SQL Editor run `supabase/migrations/202610090001_library.sql`, then `supabase/seed.sql` exactly once. Alternatively use the Supabase CLI migrations workflow in the manual.
-2. Disable public signup in Auth settings. Create the first staff user through Auth > Users; use a strong unique password. Copy their UUID into `scripts/bootstrap-admin.sql` and run that file in the trusted SQL Editor.
-3. Copy `.env.example` to `.env.local`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the project's URL and public publishable/anon key. Never use a service-role key in the frontend.
-4. Rebuild and verify live sign-in locally. Assign further roles in Settings after creating Auth users.
-5. Create a Cloudflare Pages project from your Git repository: build command `npm ci && npm run build`, output `dist`. Set both `VITE_` variables in the Pages build settings for the target environment. Deploy and set Supabase Auth's Site URL to the HTTPS deployment URL. See the full manual for direct upload and custom domains.
-6. Run institutional acceptance tests and an off-site backup/restore drill before entering production data. Free Supabase lacks automatic backups and may pause when inactive.
-
-## Verification
-
-```powershell
-npm test
-npm run build
-npm run preview
-# In a second terminal (Chrome installed):
-npm run test:ui
-```
-
-Database tests execute the actual migration/RPCs in PostgreSQL via PGlite. Browser tests use headless Chrome. See `docs/verification.md` for observed results and limitations.
-
-## Manual / CHM
-
-Open `docs/help/index.html` or `docs/help/printable.html` (Print > Save as PDF). The complete Windows CHM source is under `docs/help`. After installing Microsoft HTML Help Workshop:
-
-```powershell
-.\scripts\build-chm.ps1
-# If installed elsewhere:
-.\scripts\build-chm.ps1 -Compiler 'C:\Tools\HTML Help Workshop\hhc.exe'
-```
-
-The script verifies a newly produced nonempty `docs/help/RBMI.chm`. No compiled CHM is supplied when the compiler is unavailable.
-
-## Package contents
-
-- `src/`: React screens, styles, live/demo adapters.
-- `supabase/`: authoritative SQL migration, institution/policy seed, local CLI config.
-- `scripts/`: demo generation, barcode/browser checks, startup and CHM build helpers.
-- `docs/`: requirements, architecture, research, verification and full manual.
-- `public/`: SPA host headers/redirects, demo SQL and hosted help.
-- `tests/`: executable PostgreSQL workflow/security checks.
-- `package-lock.json`: reproducible dependencies.
-
-Known scope: institution snapshots load all accessible rows; plan pagination before very large catalogues/audit history. Holds use a manual FIFO queue without notification emails. Acquisition receipt is full quantity. Lost copies do not automatically create replacement charges. See architecture/manual for exact policy semantics and acceptance steps.
-
-## Password management
-
-Administrators can reset assigned users through Settings → Institution access. Every signed-in role can use Change my password in the sidebar. Both operations require the caller's current password. See [password-management.md](docs/password-management.md) for instructions and the required server-only environment variable and migration.
+The Koha documentation informed targeted modules; this is not full Koha compatibility. See docs/koha-coverage.md and the manual. Snapshots load all accessible library records; indexed lookups and bounded rendering handle the current collection, while significantly larger holdings/audit history need server pagination. Partial acquisitions receipts, offline circulation, RFID/SIP2, EDI, full MARC editing, automated claims/hold emails and public tags/reviews are outside this release. Restore drills and provider quota monitoring remain operational responsibilities.

@@ -1,28 +1,35 @@
-# Vercel deployment and shared staff access
+# RBMI ILMS 2.0 - vercel deployment
 
-Import `https://github.com/drrahulrastogi/rbmi-ilms` into the intended Vercel account. Choose Vite and the repository root. `vercel.json` installs locked dependencies, runs database tests, builds the app, and publishes `dist`. Keep `VITE_BASE_PATH` unset: Vercel serves this app at `/`, while the GitHub Pages workflow supplies its own repository path. No paid plan is selected by the project.
+Updated 23 October 2026. The authoritative operator guide is docs/help/index.html.
 
-## Database and staff accounts
+## Developer installation and deployment
 
-Vercel hosts the frontend. Each browser has separate fictional records until Supabase is configured. A public frontend URL alone does not provide shared records or staff authentication.
+The source repository is drrahulrastogi/rbmi-ilms. The UI and account endpoints run on Vercel; shared records and Auth run on Supabase.
 
-1. Create a Supabase project in an organization you control. Select the region appropriate for RBMI, and enter a unique database password yourself. Store that password securely; never commit it or put it in frontend variables.
-2. Run `supabase/migrations/202610090001_library.sql` and then `supabase/seed.sql` in the Supabase SQL Editor. The seed initializes institutions and policies; fictional demonstration books and patrons are generated only by the browser demo adapter.
-3. Disable new user signups in Supabase Auth. Create the initial administrator in Auth > Users. Fill their UUID into `scripts/bootstrap-admin.sql` and execute that script in SQL Editor. Give colleagues individual Auth accounts and institution memberships in app Settings. Accounts without memberships cannot access institutional records.
-4. In Vercel Project > Settings > Environment Variables add both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for Production. Use the Supabase project HTTPS URL and public publishable/anon key. **Never use a service-role key, secret key or database password.** The two frontend values are public by design.
-5. Deploy or redeploy after adding the variables. Set Supabase Auth's Site URL to the exact production Vercel URL. Sign in as the administrator and verify all five institution memberships.
-6. Verify a record created by one authorized colleague appears for another colleague in the same institution after Refresh data. Confirm a colleague without membership cannot access that institution. Check issue/return/renewal, holidays, fines and audit logs before adding real records.
+1. Install Node.js 20.16 or newer, run npm ci, npm test and npm run build. npm run dev starts local development. Without both Supabase variables it uses fictional browser-local records.
+2. For a NEW Supabase project run database/install-new-supabase.sql once, containing all five migrations and the policy/institution seed. Never run the creation installer over an existing library.
+3. Disable public signup, keep email/password login enabled, create rahul.r@rbmi.in in Auth and run scripts/bootstrap-admin.sql with its UUID.
+4. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY only as a sensitive server-side Vercel variable; never prefix it with VITE_.
+5. Set Auth Site URL to the HTTPS application, allow /?recovery=1, configure SMTP and require 12-character passwords with lower/upper letters, numbers and symbols.
+6. Deploy the repository root to the intended Vercel Vite project. vercel.json runs tests before the build. The current release uses authenticated CLI deployment; GitHub source hosting alone does not imply automatic Vercel deployment.
+7. For an existing installation, back up first and apply only missing migrations in order. Never recreate the original schema over live data.
 
-The existing help manual contains detailed migration, access, backup and operating procedures. Keep independent database backups. The PGlite demo database remains browser-local and is not automatically imported into Supabase.
+PostgreSQL provides transactional circulation and unique identifiers. Supabase supplies managed database/Auth and Vercel serves the UI and server endpoints.
 
-## Sharing the site
+Free plans have quotas and provider-controlled pause/retention rules. Check dashboards before scaling. No paid upgrade is enabled by this release.
 
-Share the stable production domain shown by Vercel after deployment. Production visitors should see the app sign-in page with Supabase configured. Vercel dashboard/team membership is not required for library users; the app's Supabase accounts and institution roles control access.
+## Change or recover a password
 
-Check the deployed logo, Help link and a successful staff sign-in. GitHub pushes to the connected production branch trigger Vercel deployments. Keep GitHub Pages variables separate from Vercel environment variables.
+Email recovery is available to every role, including the administrator, through Supabase Auth and the configured SMTP service.
 
-## Hosting plan
+1. When signed in, select Change my password. Enter the current password, a different new password and matching confirmation.
+2. When unable to sign in, choose Forgot password? Recover by email. Enter the registered address and check inbox and spam folders.
+3. Open the newest recovery link. Continue securely if prompted, then enter and save a matching new password. Successful recovery signs you out; sign in with the new password.
+4. Use 12 to 128 characters, including uppercase, lowercase, a number and a symbol. Choose a unique password for each person.
+5. Admin may reset another assigned account in Settings > Institution access after verifying the person's identity and entering the administrator password. Share the temporary password privately and ask the person to change it.
+6. For an expired, incomplete or previously used link, request a new email. Ask admin to correct a wrong registered email.
 
-Vercel's Hobby plan is for personal, non-commercial use. A personal demonstration for peers may fit; institutional production use must be assessed against Vercel's current terms before choosing a plan. Do not upgrade or incur charges without the owner's approval.
+Staff cannot reset the administrator; the administrator recovers through their own registered email.
 
-Official references: https://vercel.com/docs/frameworks/frontend/vite and https://vercel.com/docs/plans/hobby.
+Old passwords cannot be read from Supabase. Passwords are excluded from audit records, GitHub and public source downloads. An initial-password file becomes stale after users change their passwords.
+

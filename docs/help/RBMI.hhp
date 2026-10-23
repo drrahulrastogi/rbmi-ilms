@@ -7,32 +7,33 @@ Default topic=index.html
 Display compile progress=Yes
 Full-text search=Yes
 Language=0x409 English (United States)
-Title=RBMI Integrated Library Management System
+Title=RBMI Integrated Library Management System 2.0
 
 [FILES]
-user-guide.html
-user-guide.pdf
 index.html
-printable.html
 welcome.html
-installation.html
-deployment.html
 access.html
-catalogue.html
+passwords.html
+overview.html
+availability.html
 patrons.html
+imports.html
+catalogue.html
+marc.html
 circulation.html
 holds.html
 fines.html
-imports.html
 acquisitions.html
+authorities.html
+lists.html
+serials.html
+search.html
+opac.html
 stock.html
 reports.html
 administration.html
+deployment.html
 backup.html
 troubleshooting.html
-assets\manual.css
-assets\rbmi-logo.jpg
-
-passwords.html
-
-[INFOTYPES]
+assets/manual.css
+assets/rbmi-logo.png

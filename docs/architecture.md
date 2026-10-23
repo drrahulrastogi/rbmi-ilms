@@ -1,41 +1,50 @@
-# Architecture
+# RBMI ILMS 2.0 - architecture
 
-React 19 + Vite 6 provides a responsive single-page application. Supabase Auth establishes identity. PostgreSQL is the authoritative backend. `app` is a private schema, excluded from PostgREST's exposed schemas. All app tables have RLS enabled with no direct client policies; anon/authenticated roles lack schema/table privileges. Only three security-definer public functions are callable by authenticated users. Each function uses an empty search path and checks the caller's membership using `auth.uid()`. Never store authority in editable Auth user metadata.
+Updated 23 October 2026. The authoritative operator guide is docs/help/index.html.
 
-## Data model
+## Developer installation and deployment
 
-Institutions (five codes) -> memberships, patrons, titles, policies, holidays, vendors and inventory sessions. A title -> many physical copies. Copies -> loan history with a unique partial index allowing one open loan per copy. A loan stores the issue-time policy JSON. Holds are per title/patron, unique while waiting, with FIFO ordering by timestamp and UUID. A returned overdue loan creates one fine. Payments and waivers append ledger entries; fines retain running paid/waived amounts with a constraint that they cannot exceed the assessed amount. Acquisitions refer to vendors and titles and generate copies once upon receipt. Stock items capture expected copy status at session start. Audit is append-only to application users.
+The source repository is drrahulrastogi/rbmi-ilms. The UI and account endpoints run on Vercel; shared records and Auth run on Supabase.
 
-Loans and book copies are separate from financial records. No irreversible deletions are exposed. Copy status changes require a reason, cannot change a loaned copy, and are audited. Marking lost does not automatically charge replacement cost: issue the appropriate institutional accounting instruction outside this ledger. Dates use Asia/Kolkata; timestamps are timezone-aware. Stock close is reconciliation reporting, never automatic loss marking.
+1. Install Node.js 20.16 or newer, run npm ci, npm test and npm run build. npm run dev starts local development. Without both Supabase variables it uses fictional browser-local records.
+2. For a NEW Supabase project run database/install-new-supabase.sql once, containing all five migrations and the policy/institution seed. Never run the creation installer over an existing library.
+3. Disable public signup, keep email/password login enabled, create rahul.r@rbmi.in in Auth and run scripts/bootstrap-admin.sql with its UUID.
+4. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY only as a sensitive server-side Vercel variable; never prefix it with VITE_.
+5. Set Auth Site URL to the HTTPS application, allow /?recovery=1, configure SMTP and require 12-character passwords with lower/upper letters, numbers and symbols.
+6. Deploy the repository root to the intended Vercel Vite project. vercel.json runs tests before the build. The current release uses authenticated CLI deployment; GitHub source hosting alone does not imply automatic Vercel deployment.
+7. For an existing installation, back up first and apply only missing migrations in order. Never recreate the original schema over live data.
 
-## API
+PostgreSQL provides transactional circulation and unique identifiers. Supabase supplies managed database/Auth and Vercel serves the UI and server endpoints.
 
-`library_bootstrap()` returns `{memberships:[{institution_id,name,role,patron_id}]}` for the current user. `library_snapshot(i)` returns arrays keyed by entity table name. Staff receive one institution's data. Patrons receive catalogue/copies, their own profile/loans/holds/fines, policies and holidays; no staff audit, stock, acquisition or membership data.
+Free plans have quotas and provider-controlled pause/retention rules. Check dashboards before scaling. No paid upgrade is enabled by this release.
 
-`library_action(i,action,p)` performs exactly one transaction (nested import calls stay in the enclosing transaction). Allowed actions:
+## Accounts and role permissions
 
-| Group | Actions | Roles |
-|---|---|---|
-| Catalogue/patrons | title, copy, copy_status, patron, import | admin, librarian |
-| Desk | issue, return | admin, librarian, assistant |
-| Renewal/holds | renew, hold, cancel_hold | desk roles; patron only own records |
-| Finance | pay, waive | admin, librarian, accountant |
-| Acquisition | vendor, order, receive, cancel_order | admin, librarian |
-| Inventory | stock_start, stock_scan, stock_close | admin, librarian |
-| Administration | policy, holiday, member | admin |
-| Read-only | bootstrap, snapshot | assigned roles, including auditor |
+Permissions are enforced by the database using memberships and designated librarian assignments. Editable user profile metadata is never used to grant access.
 
-Authentication failures, constraint failures and policy violations return PostgREST errors. The UI displays them, preserving form data. Database transactions abort without partial records. Do not retry an unknown-result issue/payment automatically: refresh first and inspect loans/audit/ledger. Stock scanner retries are idempotent; payment submissions are not assigned client idempotency keys.
+1. Admin manages all libraries, policies, accounts, assignments and audit records. The system permits one network administrator.
+2. A librarian manages the assigned library's catalogue, patrons, circulation, fines, availability, acquisitions, authorities and serials. Each library has a distinct primary librarian.
+3. Assistant operates circulation and holds. Accountant records payments and waivers. Auditor reads records and reports. Staff access is limited to assigned libraries.
+4. Patron sign-ins must be linked to a patron UUID. They see the catalogue and their own loans, holds and fines, and can renew their own loans or manage their own holds.
+5. Admin opens Settings > Accounts to create staff, update non-admin email addresses or send recovery messages. Sensitive actions require the administrator's current password.
+6. To provision a patron sign-in, create its email/password identity in Supabase Auth, then assign patron role with the linked patron UUID in Institution access.
 
-## Concurrency
+The create-account form supports librarian, assistant, accountant and auditor roles. Library records and Auth users are separate entities.
 
-Issue locks the title, then copy and patron rows. Renew/return lock the title and loan/patron. This serializes copy/hold decisions and loan counts. Hold placement locks patron/title. PostgreSQL may abort one request if opposing lock orders produce a deadlock; refresh and retry the rejected request. The open-loan index, barcode/accession uniqueness and fine constraints protect integrity independently of UI state. Stock sessions are locked on scan/close. Receipt locks the acquisition so a second receipt fails. True multi-connection stress tests against hosted PostgreSQL remain a pre-production check; PGlite tests use one local engine.
+Retained sample accounts ending in .invalid cannot receive recovery emails. Replace them with real individual accounts before operational use.
 
-## Demonstration
+## Backup, restore and private handover
 
-When both environment values are empty, the browser dynamically loads PGlite (PostgreSQL compiled to WebAssembly), creates mock Auth identity/roles, executes the same migration and institutional seed, and inserts fictional patrons/books. IndexedDB `rbmi-library-v1` stores this data per origin/browser. Role switching uses six mock UUIDs. This is not authentication and is clearly labelled throughout the UI. It never connects to a live institution. Delete this site's IndexedDB to reset the demo. In live mode the PGlite chunk is not requested. Demo data/bootstrap scripts are shipped openly and contain no credentials.
+The public source package includes schema and fictional seeds, not live students, staff passwords or original private workbooks.
 
-## Scale and scope
+1. Use an authorized database dump or trusted SQL export for all app tables, source archives and audit records. Store backups in a protected off-site location.
+2. Inventory the Supabase/Vercel projects, environment variable names and SMTP setup. Keep secret values in an approved password manager.
+3. Plan Supabase Auth identity backup/migration separately through supported tools. A patron CSV is not an Auth backup.
+4. Before upgrades/imports take a verified backup and retain original Excel files and reconciliation reports.
+5. Restore into a separate project and verify counts, memberships, loans, fines and recovery settings before trusting a restore procedure.
+6. Treat initial-password CSVs as private handover files that become outdated after password changes; use recovery instead of assuming old passwords remain valid.
 
-Snapshots currently load all accessible institution rows, with table rendering in batches of 30. Test resource usage before large imports or extensive audit history; cursor-based server pagination is the next scaling step. Imports are bounded to 1,000 rows; audit currently records row details and the batch. Audit has no retention purge UI. Catalogue is institution-scoped, not a shared cross-campus title union. Authentication is password login; password resets/invitations occur through Supabase administration. Notifications, MARC/Z39.50, RFID, online payments, automated reminders, inter-library transfers and partial purchase receipts are not included. Full purchase receipt creates the ordered quantity in one transaction.
+The pre-upgrade database backup is stored privately in the workspace. A full disaster-recovery restore drill has not been performed for this release.
+
+Clearing browser storage removes local demonstration records, not live Supabase data.
 

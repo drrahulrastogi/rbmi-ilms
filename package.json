@@ -1,13 +1,13 @@
 {
   "name": "rbmi-ilms",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node scripts/prepare-demo.mjs && vite --host 127.0.0.1",
     "build": "node scripts/prepare-demo.mjs && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test tests/database.test.mjs",
+    "test": "node --test tests/database.test.mjs tests/library-v2.test.mjs tests/marc.test.mjs",
     "test:ui": "node scripts/browser-test.mjs"
   },
   "dependencies": {
