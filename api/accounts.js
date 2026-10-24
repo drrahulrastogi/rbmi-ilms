@@ -9,7 +9,7 @@ export default async function handler(req,res){
  const {data:auth,error:authError}=await client.auth.getUser(token);
  if(authError||!auth.user)return res.status(401).json({error:'Sign in required'});
  const {data:boot,error:bootError}=await client.rpc('library_bootstrap');
- if(bootError||!boot.memberships.some(m=>m.role==='admin'))return res.status(403).json({error:'Network administrator required'});
+ if(bootError||!Array.isArray(boot?.memberships)||!boot.memberships.some(m=>m?.role==='admin'))return res.status(403).json({error:'Network administrator required'});
  const service=createClient(url,secret,opts);
  try{
  if(req.method==='GET'){
