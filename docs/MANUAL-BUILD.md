@@ -1,6 +1,6 @@
 # Illustrated manual
 
-The 24-section guide includes 36 original screenshots and 40 screen references. All screenshots use sample records and contain no real passwords. Its PDF has portrait instruction pages and landscape screen pages for legibility. HTML provides the same instructions and screenshots; Windows CHM uses those HTML sources.
+The 24-section guide includes 38 original screenshots and 42 screen references. All screenshots use sample records and contain no real passwords. Its PDF has portrait instruction pages and landscape screen pages for legibility. HTML provides the same instructions and screenshots; Windows CHM uses those HTML sources.
 
 Sources:
 

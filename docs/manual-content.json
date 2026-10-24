@@ -317,17 +317,21 @@
   {
     "slug": "reports",
     "title": "Reports and saved definitions",
-    "intro": "Reports provide CSV exports and a safe dataset/date report builder. Arbitrary SQL is never accepted from the browser.",
+    "intro": "Reports can be viewed inside the application or downloaded as PDF or CSV. Every report uses the selected library. Standard reports cover the collection, circulation history, overdue loans, fines, patrons, acquisitions and most borrowed titles.",
     "steps": [
-      "Export Loans, Catalogue, Patrons, Fines, Payments or Acquisitions as available in Reports.",
-      "Inspect Most borrowed titles for recorded checkout totals, including returned issues.",
-      "Create a named report for loans, copies, patrons, fines, acquisitions or serial_issues, with optional date bounds.",
-      "Run it, inspect the first 100 rows and download CSV for all results.",
-      "Dates apply to loan issue dates, acquisition order dates and serial expected dates. Copies, patrons and fines are current snapshots and ignore date bounds."
+      "Select the correct library at the top, open Reports, and choose View report on a standard report card. The report opens on the same page; downloading a file is optional.",
+      "Use Search this report to narrow the rows. Choose 25, 50 or 100 rows per page and use Previous page / Next page. Use the horizontal scrollbar to read columns that extend beyond the screen.",
+      "Select Export PDF or Export CSV in the open report to export every matching row across all pages. Export buttons on a report card download the complete unfiltered report.",
+      "PDF includes the library code/name, report title, generation time in IST, row count, repeated column headings and page numbers. Wide tables can continue columns on another page; use the repeated # column to match rows.",
+      "For large PDFs, a progress message shows pages prepared. You can keep using the page or select Cancel PDF. Search before exporting if you only need a subset of records.",
+      "To create a saved report, select Create report, enter its name and dataset, and optionally set From / To dates. Date limits apply to loans, acquisitions and journal issues. Collection, patron and fine datasets are current snapshots.",
+      "Choose Run / view report beside a saved definition. Its results open in the same viewer, with search, pagination, PDF and CSV options. Applied date limits also appear in the PDF.",
+      "If no records match, the viewer states that clearly and PDF exports show zero matching records. Refresh data using the main refresh button after colleagues make changes."
     ],
     "notes": [
-      "Staff reporting is restricted to assigned libraries. Patron accounts cannot run staff reports.",
-      "Report scheduling, emailed outputs and Koha's arbitrary SQL editor are not implemented. Protect downloaded data."
+      "Exports include all matching records, not just the page on screen. Search is across the displayed report columns.",
+      "Reports are generated from the records currently loaded for the selected library. CSV and PDF use the same report rows. Passwords and authentication secrets are not report columns.",
+      "PDF files are prepared in the browser. Completed exports can contain private institutional records; share them only with authorized people."
     ]
   },
   {

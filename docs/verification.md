@@ -1,5 +1,8 @@
 # Verification - RBMI ILMS 2.0
 
+## Report viewer and PDF exports - 24 October 2026
+55 tests pass. Standard and saved reports support an inline searchable, paginated viewer plus CSV and PDF downloads of every matching row. Browser checks on the production build verified page navigation, filtered CSV/PDF parity, saved circulation date limits and an empty RBGN report. A 26,071-row synthetic collection exported in 28.4 seconds to a 1,003-page PDF; the final record, repeated headings and page numbers were verified. PDF generation runs in a cancellable worker with embedded font and library branding. Report joins remain library scoped and exclude credential fields. React review checked memoized report generation, deferred search, bounded table rendering, labelled controls and worker cleanup. No production records or authentication settings changed. The updated manual has 68 pages, 24 chapters, 38 sample screenshots and 42 screenshot references; the changed report pages were rendered and inspected.
+
 23 October 2026: 34 executable database/MARC tests passed, including legacy regressions, institution isolation, source-profile preservation, private source archives, FIFO holds, renewal checks, unavailability fine exclusions, immutable issue identity, same-library return, budgets/funds, serial dates, reading-list ownership, saved-report restrictions and anonymous OPAC privacy.
 
 The complete new-project installer was executed in fresh PostgreSQL/PGlite: four active libraries, all application tables protected by RLS, repeat installation refused. Production Vite build succeeded. Existing PGlite demo bundler warnings concern its optional browser demo runtime.

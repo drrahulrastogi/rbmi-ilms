@@ -172,7 +172,15 @@
   "reports": [
     {
       "file": "reports.jpg",
-      "caption": "Use standard register exports or the saved report builder. Reports remain scoped to the selected library."
+      "caption": "Each standard report offers View report, Export CSV and Export PDF. Choose the library before opening a report."
+    },
+    {
+      "file": "report-viewer.jpg",
+      "caption": "The on-screen viewer shows the matching count, search, rows per page and export controls. Exports include every matching row, not just this page."
+    },
+    {
+      "file": "saved-report-viewer.jpg",
+      "caption": "A saved circulation report shows its date limits and results inside the same viewer. It can also be exported as PDF or CSV."
     }
   ],
   "administration": [

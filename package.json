@@ -7,12 +7,14 @@
     "dev": "node scripts/prepare-demo.mjs && vite --host 127.0.0.1",
     "build": "node scripts/prepare-demo.mjs && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test tests/database.test.mjs tests/library-v2.test.mjs tests/marc.test.mjs tests/holiday-import.test.mjs tests/patron-import.test.mjs",
+    "test": "node --test tests/database.test.mjs tests/library-v2.test.mjs tests/marc.test.mjs tests/holiday-import.test.mjs tests/patron-import.test.mjs tests/reports.test.mjs",
     "test:ui": "node scripts/browser-test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.57.4",
     "jsbarcode": "^3.12.3",
+    "jspdf": "4.2.1",
+    "jspdf-autotable": "5.0.9",
     "lucide-react": "^0.468.0",
     "papaparse": "^5.5.3",
     "react": "^19.1.0",
