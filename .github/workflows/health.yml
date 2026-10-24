@@ -1,0 +1,18 @@
+name: Library availability monitor
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+permissions:
+  contents: read
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check library service
+        run: |
+          curl --fail --retry 2 --retry-delay 5 --max-time 15 https://rbmi-ilms.vercel.app/api/health -o health.json
+          python3 -c "import json; assert json.load(open('health.json'))['status']=='ok'"
+      - name: Check public page
+        run: curl --fail --retry 2 --max-time 15 https://rbmi-ilms.vercel.app/ -o /dev/null

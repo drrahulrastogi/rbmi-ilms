@@ -1,0 +1,7 @@
+// Read-only local preview of the built application with its production security headers.
+import http from 'node:http';import {readFile} from 'node:fs/promises';import {resolve,extname,sep} from 'node:path';
+const root=resolve('dist'),settings=JSON.parse(await readFile('vercel.json','utf8')),headers=Object.fromEntries(settings.headers[0].headers.map(h=>[h.key,h.value]));delete headers['Content-Security-Policy'];
+// localhost does not use HTTPS; retain all other CSP directives for realistic UI checks.
+headers['Content-Security-Policy']=settings.headers[0].headers.find(h=>h.key==='Content-Security-Policy').value.replace('; upgrade-insecure-requests','');
+const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml','.json':'application/json','.pdf':'application/pdf','.ttf':'font/ttf'};
+http.createServer(async(req,res)=>{try{const p=resolve(root,'.'+decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname));if(p!==root&&!p.startsWith(root+sep)){res.writeHead(403);res.end();return;}const file=p===root?resolve(root,'index.html'):p;const data=await readFile(file);res.writeHead(200,{...headers,'Content-Type':mime[extname(file)]||'application/octet-stream'});res.end(data);}catch{res.writeHead(404,headers);res.end();}}).listen(4178,'127.0.0.1',()=>console.log('CSP preview http://127.0.0.1:4178'));

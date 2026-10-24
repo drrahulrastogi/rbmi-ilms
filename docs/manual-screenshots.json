@@ -18,7 +18,7 @@
   "passwords": [
     {
       "file": "first-login.jpg",
-      "caption": "New imported accounts must enter the initial/current password and choose a different personal password, then sign in again."
+      "caption": "Legacy initial-password setup is shown here. New invitation users choose their own password without an initial-password field; existing account passwords remain unchanged."
     },
     {
       "file": "recovery.jpg",
@@ -40,7 +40,7 @@
   "patrons": [
     {
       "file": "patrons.jpg",
-      "caption": "Use search, Add patron, Bulk students or Bulk faculty. The institute column distinguishes campuses within the shared library."
+      "caption": "Search queries the full patron register. Previous / Next browse database pages; Bulk students and Bulk faculty provide invitation-based account setup."
     },
     {
       "file": "add-patron.jpg",
@@ -50,7 +50,7 @@
   "imports": [
     {
       "file": "faculty-import.jpg",
-      "caption": "Download the faculty CSV template, fill its fields and select the file. Password is optional: blank uses INSTITUTE@PATRON_CODE."
+      "caption": "Download the faculty template, fill the membership fields and provide a unique real email. New accounts receive invitation emails; legacy password columns are ignored."
     },
     {
       "file": "student-import.jpg",
@@ -156,7 +156,7 @@
   "opac": [
     {
       "file": "opac.jpg",
-      "caption": "Choose a library, search for a title and add it to the temporary cart. Only public catalogue fields are displayed."
+      "caption": "Title cards show exact availability counts with limited copy previews. Browse physical copies and Previous / Next controls load bounded pages."
     }
   ],
   "stock": [

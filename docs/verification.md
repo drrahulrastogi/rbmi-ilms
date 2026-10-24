@@ -1,3 +1,7 @@
+# Current hardening verification - 24 October 2026
+
+The new migration was tested in PGlite and real PostgreSQL 17.10. A 5,000-identity phase with 64 concurrent workflows / 32 connections completed in 16.90 seconds with zero errors and p95 359.56 ms. The mixed 200-request hold/issue test initially reproduced real deadlocks; title-before-patron locking plus NO KEY UPDATE on the institution removed them (0 deadlocks, one open loan, 1.12 seconds). Restore hashes matched all 35 tables, sequences were reset and a post-restore write succeeded. These are isolated synthetic database results, not hosted Auth/Vercel capacity. Current feature/limits documentation is in HARDENING.md. UI checks covered database-side search and PDF download under CSP without browser errors. Historical evidence follows.
+
 # Verification - RBMI ILMS 2.0
 
 ## Security and load review - 24 October 2026

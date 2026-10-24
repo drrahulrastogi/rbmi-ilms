@@ -20,4 +20,4 @@ The builder copies PDF and HTML deliverables into `manual-output` by default. Se
 
 To compile Windows CHM, install Microsoft HTML Help Workshop and run `scripts/build-chm.ps1`. The compiler is not bundled. The CHM project explicitly includes its screenshot assets. A compiled CHM was not produced in the development environment.
 
-The password CSV column uses `INSTITUTE@PATRON_CODE` when blank. New student/faculty logins require a real unique email and a mandatory initial password change. Membership import and Auth account creation are separate steps; review each account result. Completed password CSVs remain private and must never be copied into documentation, Git, screenshots or public downloads. Welcome emails are not sent by this release; existing password recovery email remains available.
+New student, faculty and staff accounts use one-use invitation emails. Templates omit passwords; legacy password columns are ignored. Existing passwords remain unchanged. Supabase SMTP must deliver invitation/recovery messages. Administrator TOTP protection is enabled only after the owner verifies an authenticator code in Settings.

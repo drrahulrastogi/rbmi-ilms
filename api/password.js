@@ -1,15 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
-export default async function handler(req,res){
- res.setHeader('Cache-Control','no-store');
- if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'POST required'});}
- const token=/^Bearer (.+)$/.exec(req.headers.authorization||'')?.[1];
- if(!token)return res.status(401).json({error:'Sign in required'});
- const url=process.env.VITE_SUPABASE_URL,key=process.env.VITE_SUPABASE_ANON_KEY,secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
- if(!url||!key||!secret)return res.status(503).json({error:'Password management is not configured on this server'});
- const opts={auth:{persistSession:false,autoRefreshToken:false}};
- const client=createClient(url,key,{...opts,global:{headers:{Authorization:`Bearer ${token}`}}});
- const {data:auth,error:authError}=await client.auth.getUser(token);
- if(authError||!auth.user)return res.status(401).json({error:'Sign in again to continue'});
+import {secureAccountEndpoint} from '../server/account-security.mjs';
+export default secureAccountEndpoint('password',['POST'],async(req,res,{client,service,opts,auth,token,url,key})=>{
  const {institution,target,currentPassword,password,confirmPassword,mode}=req.body||{};
  if(!['reset','change'].includes(mode)||typeof institution!=='string'||typeof currentPassword!=='string'||typeof password!=='string'||password!==confirmPassword||password.length<12||password.length>128||!/[a-z]/.test(password)||!/[A-Z]/.test(password)||!/[0-9]/.test(password)||!/[^a-zA-Z0-9]/.test(password))return res.status(400).json({error:'Use matching passwords of 12-128 characters with uppercase, lowercase, a number and a symbol'});
  const targetId=mode==='change'?auth.user.id:target;
@@ -27,7 +18,6 @@ export default async function handler(req,res){
   const {data:verified,error}=await verifier.auth.signInWithPassword({email:auth.user.email,password:currentPassword});
   if(error||verified.user?.id!==auth.user.id)return res.status(403).json({error:'Your current password is incorrect'});
   await verifier.auth.signOut({scope:'local'});
-  const service=createClient(url,secret,opts);
   // Record only actor/target, never credentials. Abort if the audit cannot be written.
   const {error:auditError}=await service.rpc('library_password_audit',{i:institution,actor_id:auth.user.id,target:targetId,event:mode==='reset'?'password_reset':'password_change'});
   if(auditError)return res.status(503).json({error:'Unable to record password operation; try again later'});
@@ -35,4 +25,4 @@ export default async function handler(req,res){
   if(updateError)return res.status(400).json({error:'Password update failed. Check the password requirements and try again.'});
   return res.status(200).json({ok:true});
  }catch{return res.status(503).json({error:'Password service unavailable; try again later'});}
-}
+});

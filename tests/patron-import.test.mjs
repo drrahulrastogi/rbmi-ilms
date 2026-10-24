@@ -1,8 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {normalizePatronRow} from '../src/patron-import.mjs';
-import {initialPassword,strongPassword,withoutPasswords} from '../server/patron-credentials.mjs';
-test('CSV initial password defaults to institute and patron code, allows an override and strips secrets from records',()=>{
- assert.equal(initialPassword('RBCET','RBCET-F100'),'RBCET@RBCET-F100');assert.equal(initialPassword('RBMI','F001','PrivateTest123!'),'PrivateTest123!');assert.throws(()=>initialPassword('A','B'),/8 to 128/);
+import {strongPassword,withoutPasswords} from '../server/patron-credentials.mjs';
+test('legacy CSV password fields are stripped from records and personal password strength is checked',()=>{
  assert.deepEqual(withoutPasswords({code:'X',password:'PrivateTest123!',profile:{department:'CSE',password:'PrivateTest123!'}}),{code:'X',profile:{department:'CSE'}});
  assert.equal(strongPassword('RBCET@RBCET-F100'),false);assert.equal(strongPassword('NewPersonal123!'),true);
 });

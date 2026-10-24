@@ -14,9 +14,9 @@ Run npm test and npm run build for validation. npm run preview serves a producti
 
 ## Deploy a complete installation
 1. Follow database/README.md. In a NEW Supabase project, run database/install-new-supabase.sql once, create the administrator Auth user and apply scripts/bootstrap-admin.sql with its UUID.
-2. Disable public signup, retain email/password login, set Auth Site URL to the HTTPS deployment, allow /?recovery=1, configure SMTP, and require strong 12-character passwords.
+2. Disable public signup, retain email/password login, set Auth Site URL to the HTTPS deployment, allow /?recovery=1 and /?setup=invite, configure SMTP, and require strong 12-character passwords.
 3. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY as a sensitive server-only Production variable in Vercel, never with a VITE_ prefix.
-4. Deploy this repository root as Vite with vercel.json. It runs npm test and npm run build and publishes the UI plus api/password.js and api/accounts.js. Static-only GitHub Pages cannot provide these server endpoints.
+4. Deploy this repository root as Vite with vercel.json. It runs npm test and npm run build and publishes the UI plus the account, invitation and health endpoints. Static-only GitHub Pages cannot provide these server endpoints.
 5. Confirm intended Vercel scope/project before deploying. Current production uses the linked Vercel CLI project rbmi-ilms, scope engg1. CLI release is used; GitHub automatic deployment is not assumed.
 6. Verify sign-in, isolation, recovery, issue/return/fines and backups before opening a new installation for staff.
 
@@ -29,3 +29,5 @@ Run scripts/build-chm.ps1 after installing Microsoft HTML Help Workshop, or pass
 Real RBCET students and Central Library holdings are imported privately into the hosted database. This repository and source ZIP contain schema, policy seed and fictional demo records only. Protected import archives preserve source fields and provenance. Anonymous OPAC excludes students, accounts, fines and prices. All private tables deny direct API-role access; RPCs enforce membership.
 
 The Koha documentation informed targeted modules; this is not full Koha compatibility. See docs/koha-coverage.md and the manual. Holdings load through library-scoped keyset pages; indexed lookups and bounded rendering handle the current collection. The browser keeps the loaded collection, and very large audit histories may need additional pagination. Partial acquisitions receipts, offline circulation, RFID/SIP2, EDI, full MARC editing, automated claims/hold emails and public tags/reviews are outside this release. Restore drills and provider quota monitoring remain operational responsibilities.
+
+Security/scaling details and measured limits: [docs/HARDENING.md](docs/HARDENING.md). New accounts use invitation emails; existing passwords are retained. The administrator enables authenticator protection after verifying a code in Settings.

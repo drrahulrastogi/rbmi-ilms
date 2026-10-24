@@ -11,7 +11,7 @@
     ],
     "notes": [
       "A yellow Sample data banner means an isolated browser demonstration with fictional records. Live staff must use the Supabase-connected deployment.",
-      "Passwords are supplied privately to the owner. A patron card number is not a sign-in password; student import does not create authentication accounts."
+      "New accounts receive a one-use invitation email and choose their own private password. A patron card number is not a password. Existing passwords are retained."
     ]
   },
   {
@@ -37,18 +37,19 @@
     "title": "Change or recover a password",
     "intro": "Email recovery is available to every role, including the administrator, through Supabase Auth and the configured SMTP service.",
     "steps": [
-      "For a newly imported student or faculty member, sign in using the CSV email and its initial password. A blank password cell uses INSTITUTE@PATRON_CODE. The system requires a different personal password before library records can be accessed; enter the initial/current password, new password and confirmation, save, then sign in again.",
+      "For a newly invited student, faculty member or staff member, open the invitation email and choose your own strong password. No default password is created or emailed. Save, then sign in again using your email and chosen password.",
       "When signed in, select Change my password. Enter the current password, a different new password and matching confirmation.",
       "When unable to sign in, choose Forgot password? Recover by email. Enter the registered address and check inbox and spam folders.",
       "Open the newest recovery link. Continue securely if prompted, then enter and save a matching new password. Successful recovery signs you out; sign in with the new password.",
       "Use 12 to 128 characters, including uppercase, lowercase, a number and a symbol. Choose a unique password for each person.",
       "Admin may reset another assigned account in Settings > Institution access after verifying the person's identity and entering the administrator password. Share the temporary password privately and ask the person to change it.",
-      "For an expired, incomplete or previously used link, request a new email. Ask admin to correct a wrong registered email."
+      "For an expired, incomplete or previously used link, request a new email. Ask admin to correct a wrong registered email.",
+      "Administrator: open Settings > Administrator two-step verification, select Set up authenticator, scan the private QR code, and enter its current six-digit code. Select Verify and enable protection. Future administrator sessions must verify the second factor before records or account tools can be accessed."
     ],
     "notes": [
       "Staff cannot reset the administrator; the administrator recovers through their own registered email.",
       "Old passwords cannot be read from Supabase. Passwords are excluded from audit records, GitHub and public source downloads. An initial-password file becomes stale after users change their passwords.",
-      "The first password change is enforced by the database, not only the screen. Old sessions cannot access records after setup completes. Forgotten-password recovery remains available by email; a new imported account must still finish its first-login form."
+      "Pending password setup is enforced by the database. Legacy accounts that still have an initial password use the current-password form shown in the screenshot. New invitation accounts do not need an initial password. An expired setup invitation can be resent by the librarian from import results, or by the administrator through account recovery."
     ]
   },
   {
@@ -93,7 +94,8 @@
       "To add faculty individually, select the library, choose Add patron, set category Faculty and choose the institute. RBCET and RBMI share one library but remain separate institute choices. Enter the faculty employee/patron code, name and department, then save.",
       "Add patron requires unique code, name, category and active status. Email, department/class and expiry are optional.",
       "To edit a membership, retain its existing code. The core editor changes name, email, category, department, active flag and expiry; uploaded additional profile fields remain preserved.",
-      "Deactivate or expire memberships when borrowing must stop. Preserve their loan history. Export CSV only for authorized institutional work."
+      "Deactivate or expire memberships when borrowing must stop. Preserve their loan history. Export CSV only for authorized institutional work.",
+      "Patron search runs against the database. Use Previous / Next beneath the table to browse 50 matching records per page. CSV export reads every matching page, not just the visible rows."
     ],
     "notes": [
       "Source blanks remain blank. No birth dates, contact information or expiry dates are invented.",
@@ -110,17 +112,17 @@
       "Books require title, author, accession and barcode. Optional fields include ISBN, publisher, subject, classification, year, shelf and price. One row creates one physical copy.",
       "Student CSV requires code and name; optional email, category, department, active and expires. Additional profile columns can be preserved through student imports.",
       "Faculty CSV requires code and name. Set category to faculty; institute must belong to the selected library (RBCET or RBMI for the central library, otherwise RBCP, RBCN or RBGN). Optional columns include email, department, active and expires. Existing faculty codes update memberships; a code already used by a student or another category is rejected. Review the preview and approve the batch.",
-      "Student and faculty templates include password. Leave it blank for INSTITUTE@PATRON_CODE, for example RBCET@RBCET-F100, or enter an initial password of 8–128 characters. Supply a unique real email, which becomes the sign-in ID. Keep completed password CSVs private; they are not part of public project downloads.",
+      "New templates omit passwords. Supply each person's real, unique email address for a secure invitation. A legacy password column is ignored and removed before profiles or audit records are saved. Existing accounts keep their current password.",
       "Export Excel as UTF-8 CSV without converting identifiers into scientific notation or losing leading zeros. Use no more than 1,000 rows and 5 MB per batch.",
       "Review errors and the first eight rows, confirm the checkbox and import. A failed row rolls the entire batch back.",
       "Existing patron codes update core memberships. Duplicate book barcodes/accessions reject the batch. Review updates carefully; blank expiry clears it and blank active defaults to true.",
       "The owner-provided import prepares 278 students and 26,071 book copies. One book row missing a barcode or title is held in the private review report. Original workbooks remain unchanged.",
-      "After memberships save, keep the page open while logins are created in small batches. Review Imported account results. Existing linked logins retain their passwords; missing emails, inactive memberships or an email already used by another account need review. Re-upload corrected rows to retry. Email delivery of initial passwords is not enabled."
+      "After memberships save, keep the page open while invitation emails are requested in batches of ten. Review Imported account results. Used/missing emails, inactive memberships and SMTP limits need review. Re-upload corrected rows to retry without replacing existing accounts. Use Resend setup email for a pending invitation."
     ],
     "notes": [
       "Protected archives retain source hashes, sheet names, row numbers and original fields. The BSCS sheet's incomplete header was mapped to the common 15-column book layout after inspection.",
       "Missing authors use Unknown author. Missing or nonnumeric prices use zero operationally while retaining the original value in source details. Historical loans are not inferred from a stock list.",
-      "Passwords are removed before saving patron profiles or audit details. Records save transactionally, but Auth account creation is a subsequent step with per-row results. If interrupted, re-upload to retry without resetting existing login passwords."
+      "Membership records save transactionally; Auth invitations are a subsequent step with per-row results. A failed email does not undo a saved membership. Delivery depends on Supabase SMTP and provider quotas; the application never emails a plain-text password."
     ]
   },
   {
@@ -166,7 +168,8 @@
       "Open Circulation and locate the active loan by book, barcode or patron. Verify the library column and due date.",
       "Use Renew only when permitted. Overdue loans, exhausted renewals, waiting holds, inactive memberships and excessive balances block renewal.",
       "Use Return in the same library. The server rejects another issuing library code even for admin. Return, fine posting and copy availability commit together.",
-      "Inspect the return notice and assessed fine. In Returned loans choose Receipt and print its library, patron, book and fine details."
+      "Inspect the return notice and assessed fine. In Returned loans choose Receipt and print its library, patron, book and fine details.",
+      "Active and returned loan lists use database pages of 50 records. Search matches the full list. Use Previous / Next to navigate; overview statistics count all records even when only a preview is loaded."
     ],
     "notes": [
       "Each loan stores its policy values. Later policy edits apply to new loans; existing issues retain their recorded rules.",
@@ -289,8 +292,8 @@
     "intro": "Open Browse public catalogue or https://rbmi-ilms.vercel.app/?opac=1 without a staff account.",
     "steps": [
       "Select a library and search title, author, ISBN or subject.",
-      "Review publisher/year, classification, accession/shelf, status and available-copy counts.",
-      "Use Show more for additional matches. Add titles to the temporary cart and print the selection/catalogue page.",
+      "Review publisher/year, classification and exact availability totals. Only a small preview of physical copies is shown on each title card.",
+      "Use Previous titles / Next titles to browse. Select Browse physical copies, then First copies / Next copies to read accession, shelf and status in pages of 50. Add titles to the temporary cart and print the selection/catalogue page.",
       "Return through Staff / reader sign in. Linked patrons manage their own loans and holds only after authentication."
     ],
     "notes": [
@@ -330,8 +333,9 @@
     ],
     "notes": [
       "Exports include all matching records, not just the page on screen. Search is across the displayed report columns.",
-      "Reports are generated from the records currently loaded for the selected library. CSV and PDF use the same report rows. Passwords and authentication secrets are not report columns.",
-      "PDF files are prepared in the browser. Completed exports can contain private institutional records; share them only with authorized people."
+      "Complete reports are fetched on demand through bounded database pages; the smaller workspace preview is never used as a complete register. CSV and PDF contain the same matching rows and exclude passwords and authentication secrets.",
+      "PDF files are prepared in the browser. Completed exports can contain private institutional records; share them only with authorized people.",
+      "Report preparation can be cancelled. Exports stop with an explicit error if a dataset exceeds 50,000 records; use a saved report with narrower dates instead of accepting a partial file."
     ]
   },
   {
@@ -346,12 +350,14 @@
       "To replace a librarian, use Assign librarian with the existing Auth UUID and display name. The former primary librarian membership is removed from that library.",
       "Assign assistant, accountant, auditor or linked patron memberships in Institution access. Another network admin cannot be created here.",
       "Open Audit trail, search by action/actor/details, expand stored details and export authorized records.",
-      "Review availability changes, account operations, imports, returns and fine waivers in particular."
+      "Review availability changes, account operations, imports, returns and fine waivers in particular.",
+      "Audit and membership tables use Previous / Next database pages. Other growing workflow sections show Load next controls when more data exists. Their local search covers records loaded so far. Account lists load 100 Auth users at a time."
     ],
     "notes": [
       "The administrator email is fixed in the account UI. An administrator-identity change requires deliberate trusted database maintenance.",
       "Audit records have no user-facing deletion. Passwords are not stored in audit details.",
-      "Uploaded and additional holidays are excluded from overdue fine days. They also move newly calculated due dates to the next open day. Already assessed fines are retained; use an authorized audited waiver where appropriate."
+      "Uploaded and additional holidays are excluded from overdue fine days. They also move newly calculated due dates to the next open day. Already assessed fines are retained; use an authorized audited waiver where appropriate.",
+      "Large audit details are summarized in lists and CSV. Open View details > Load full audit details and use Previous / Next detail part to inspect the complete preserved payload."
     ]
   },
   {
@@ -360,16 +366,17 @@
     "intro": "The source repository is drrahulrastogi/rbmi-ilms. The UI and account endpoints run on Vercel; shared records and Auth run on Supabase.",
     "steps": [
       "Install Node.js 20.16 or newer, run npm ci, npm test and npm run build. npm run dev starts local development. Without both Supabase variables it uses fictional browser-local records.",
-      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all eleven migrations and the policy/institution seed. Never run the creation installer over an existing library.",
+      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all twelve migrations and the policy/institution seed. Never run the creation installer over an existing library.",
       "Disable public signup, keep email/password login enabled, create rahul.r@rbmi.in in Auth and run scripts/bootstrap-admin.sql with its UUID.",
       "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY only as a sensitive server-side Vercel variable; never prefix it with VITE_.",
-      "Set Auth Site URL to the HTTPS application, allow /?recovery=1, configure SMTP and require 12-character passwords with lower/upper letters, numbers and symbols.",
+      "Set Auth Site URL to the HTTPS application; allow /?recovery=1 and /?setup=invite. Configure invite/recovery SMTP and require strong passwords. New invitations use the provider's one-use email link and a 24-hour application setup deadline; provider link expiry may be shorter.",
       "Deploy the repository root to the intended Vercel Vite project. vercel.json runs tests before the build. The current release uses authenticated CLI deployment; GitHub source hosting alone does not imply automatic Vercel deployment.",
       "For an existing installation, back up first and apply only missing migrations in order. Never recreate the original schema over live data."
     ],
     "notes": [
       "PostgreSQL provides transactional circulation and unique identifiers. Supabase supplies managed database/Auth and Vercel serves the UI and server endpoints.",
-      "Free plans have quotas and provider-controlled pause/retention rules. Check dashboards before scaling. No paid upgrade is enabled by this release."
+      "Free plans have quotas and provider-controlled pause/retention rules. Check dashboards before scaling. No paid upgrade is enabled by this release.",
+      "Vercel adds Content-Security-Policy and Permissions-Policy headers. Account endpoints use shared per-IP and per-user quotas, return 429 with Retry-After, and emit redacted structured logs. The GitHub health workflow checks /api/health and the public page every 15 minutes after publication. Configure repository workflow-failure notifications for alerts."
     ]
   },
   {
@@ -385,7 +392,7 @@
       "Treat initial-password CSVs as private handover files that become outdated after password changes; use recovery instead of assuming old passwords remain valid."
     ],
     "notes": [
-      "The pre-upgrade database backup is stored privately in the workspace. A full disaster-recovery restore drill has not been performed for this release.",
+      "A synthetic local PostgreSQL restore drill compared hashes for all 35 app/Auth-stub tables, restored sequences and verified a post-restore write. This does not certify production disaster recovery, hosted Supabase Auth, Storage or point-in-time recovery. Take protected production backups and verify a separate hosted restore before relying on them.",
       "Clearing browser storage removes local demonstration records, not live Supabase data."
     ]
   },
@@ -400,7 +407,8 @@
       "Fine seems wrong: inspect saved policy, eligible dates, holidays, availability, grace and cap. Already-posted charges require an authorized waiver when correcting past dates.",
       "No email: inspect spam, use the latest request, verify the address, SMTP limits and Auth redirect settings. The owner confirmed administrator recovery-email delivery during setup.",
       "Import fails: inspect required columns, duplicates and invalid numbers. A failing batch rolls back.",
-      "Slow catalogue: narrow the search and use Show more. Holdings load through secure server pages. Very large audit histories may require additional pagination."
+      "Slow catalogue: narrow the search and use Show more. Holdings load through secure server pages. Very large audit histories may require additional pagination.",
+      "Too many requests (429): wait for the Retry-After period, then retry. MFA prompt: enter the current authenticator code. Invitation expired: ask the librarian/admin to resend setup email; discard older links."
     ],
     "notes": [
       "Outside scope: offline circulation, RFID/SIP2, EDI, SSO, federated discovery, complex serial schedules, automated claims/hold emails, purchase suggestions, reviews/tags, partial receipts and full MARC editing/export.",
