@@ -5,7 +5,7 @@
     "intro": "Open https://rbmi-ilms.vercel.app in a current browser. RBMI ILMS 2.0 uses React, shared Supabase PostgreSQL and Supabase email/password authentication. GitHub and hosting dashboard accounts are separate from library sign-in accounts.",
     "steps": [
       "Sign in with your registered email and private password. Verify that the connection indicator says Supabase connected.",
-      "Select RBCET for the shared RBCET / RBMI Central Library, RBCP for Pharmacy, RBCN for Nursing, or RBGN for its separate library. RBMI is a campus in the shared library, not a fourth issue desk.",
+      "Select RBCET for the shared RBCET / RBMI Central Library, RBCP for Pharmacy, RBCN for Nursing, or RBGN for its separate library. RBMI is a campus in the shared library, not another issue desk.",
       "The single network administrator is rahul.r@rbmi.in and manages all four libraries. Nidhi Dewal, nidhi@rbmi.in, serves RBCET/RBMI. Rekha, rekha@rbmi.in, serves RBCP. Sheeba, sheeba@rbmi.in, serves RBCN. Raveena, raveena@rbmi.in, serves RBGN.",
       "Use the sidebar modules. On a phone open the navigation menu. Refresh data to see a colleague's recent changes. Sign out before leaving a shared computer."
     ],
@@ -28,7 +28,8 @@
     ],
     "notes": [
       "The create-account form supports librarian, assistant, accountant and auditor roles. Library records and Auth users are separate entities.",
-      "Retained sample accounts ending in .invalid cannot receive recovery emails. Replace them with real individual accounts before operational use."
+      "Retained sample accounts ending in .invalid cannot receive recovery emails. Replace them with real individual accounts before operational use.",
+      "Imported students and faculty receive the Patron role linked to their own borrowing record, never a librarian or administrator role. Existing staff logins are not automatically linked by matching email."
     ]
   },
   {
@@ -36,6 +37,7 @@
     "title": "Change or recover a password",
     "intro": "Email recovery is available to every role, including the administrator, through Supabase Auth and the configured SMTP service.",
     "steps": [
+      "For a newly imported student or faculty member, sign in using the CSV email and its initial password. A blank password cell uses INSTITUTE@PATRON_CODE. The system requires a different personal password before library records can be accessed; enter the initial/current password, new password and confirmation, save, then sign in again.",
       "When signed in, select Change my password. Enter the current password, a different new password and matching confirmation.",
       "When unable to sign in, choose Forgot password? Recover by email. Enter the registered address and check inbox and spam folders.",
       "Open the newest recovery link. Continue securely if prompted, then enter and save a matching new password. Successful recovery signs you out; sign in with the new password.",
@@ -45,7 +47,8 @@
     ],
     "notes": [
       "Staff cannot reset the administrator; the administrator recovers through their own registered email.",
-      "Old passwords cannot be read from Supabase. Passwords are excluded from audit records, GitHub and public source downloads. An initial-password file becomes stale after users change their passwords."
+      "Old passwords cannot be read from Supabase. Passwords are excluded from audit records, GitHub and public source downloads. An initial-password file becomes stale after users change their passwords.",
+      "The first password change is enforced by the database, not only the screen. Old sessions cannot access records after setup completes. Forgotten-password recovery remains available by email; a new imported account must still finish its first-login form."
     ]
   },
   {
@@ -94,8 +97,8 @@
     ],
     "notes": [
       "Source blanks remain blank. No birth dates, contact information or expiry dates are invented.",
-      "Importing students does not create login accounts. Student profiles and source archives are private and never appear in anonymous OPAC responses.",
-      "Faculty memberships use faculty circulation policies. Patron import does not create a sign-in account; create a separate Auth account only if online access is required."
+      "Student and faculty bulk imports create linked patron logins when a unique real email is supplied. Student profiles and source archives are private and never appear in anonymous OPAC responses.",
+      "Faculty memberships use faculty circulation policies. Bulk uploads create linked Patron-role accounts; individual Add patron creates only the borrowing membership."
     ]
   },
   {
@@ -107,14 +110,17 @@
       "Books require title, author, accession and barcode. Optional fields include ISBN, publisher, subject, classification, year, shelf and price. One row creates one physical copy.",
       "Student CSV requires code and name; optional email, category, department, active and expires. Additional profile columns can be preserved through student imports.",
       "Faculty CSV requires code and name. Set category to faculty; institute must belong to the selected library (RBCET or RBMI for the central library, otherwise RBCP, RBCN or RBGN). Optional columns include email, department, active and expires. Existing faculty codes update memberships; a code already used by a student or another category is rejected. Review the preview and approve the batch.",
+      "Student and faculty templates include password. Leave it blank for INSTITUTE@PATRON_CODE, for example RBCET@RBCET-F100, or enter an initial password of 8–128 characters. Supply a unique real email, which becomes the sign-in ID. Keep completed password CSVs private; they are not part of public project downloads.",
       "Export Excel as UTF-8 CSV without converting identifiers into scientific notation or losing leading zeros. Use no more than 1,000 rows and 5 MB per batch.",
       "Review errors and the first eight rows, confirm the checkbox and import. A failed row rolls the entire batch back.",
       "Existing patron codes update core memberships. Duplicate book barcodes/accessions reject the batch. Review updates carefully; blank expiry clears it and blank active defaults to true.",
-      "The owner-provided import prepares 278 students and 26,071 book copies. One book row missing a barcode or title is held in the private review report. Original workbooks remain unchanged."
+      "The owner-provided import prepares 278 students and 26,071 book copies. One book row missing a barcode or title is held in the private review report. Original workbooks remain unchanged.",
+      "After memberships save, keep the page open while logins are created in small batches. Review Imported account results. Existing linked logins retain their passwords; missing emails, inactive memberships or an email already used by another account need review. Re-upload corrected rows to retry. Email delivery of initial passwords is not enabled."
     ],
     "notes": [
       "Protected archives retain source hashes, sheet names, row numbers and original fields. The BSCS sheet's incomplete header was mapped to the common 15-column book layout after inspection.",
-      "Missing authors use Unknown author. Missing or nonnumeric prices use zero operationally while retaining the original value in source details. Historical loans are not inferred from a stock list."
+      "Missing authors use Unknown author. Missing or nonnumeric prices use zero operationally while retaining the original value in source details. Historical loans are not inferred from a stock list.",
+      "Passwords are removed before saving patron profiles or audit details. Records save transactionally, but Auth account creation is a subsequent step with per-row results. If interrupted, re-upload to retry without resetting existing login passwords."
     ]
   },
   {
@@ -350,7 +356,7 @@
     "intro": "The source repository is drrahulrastogi/rbmi-ilms. The UI and account endpoints run on Vercel; shared records and Auth run on Supabase.",
     "steps": [
       "Install Node.js 20.16 or newer, run npm ci, npm test and npm run build. npm run dev starts local development. Without both Supabase variables it uses fictional browser-local records.",
-      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all ten migrations and the policy/institution seed. Never run the creation installer over an existing library.",
+      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all eleven migrations and the policy/institution seed. Never run the creation installer over an existing library.",
       "Disable public signup, keep email/password login enabled, create rahul.r@rbmi.in in Auth and run scripts/bootstrap-admin.sql with its UUID.",
       "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY only as a sensitive server-side Vercel variable; never prefix it with VITE_.",
       "Set Auth Site URL to the HTTPS application, allow /?recovery=1, configure SMTP and require 12-character passwords with lower/upper letters, numbers and symbols.",

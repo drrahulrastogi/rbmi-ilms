@@ -10,3 +10,4 @@ test-results/
 supabase/.temp/
 
 .vercel
+/manual-output/

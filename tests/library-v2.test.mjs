@@ -70,3 +70,20 @@ test('librarian can add faculty individually and in bulk only to assigned librar
  assert.equal((await snap('RBCP')).patrons.filter(p=>p.code.startsWith('QA-P-F')).length,2);
  await db.exec('savepoint forbidden_faculty');await assert.rejects(action('import',{kind:'faculty',rows:[{code:'QA-X',name:'No access'}]},'RBCET'),/Access denied/);await db.exec('rollback to savepoint forbidden_faculty');
 }finally{await db.exec('rollback');await as();}});
+
+test('import password fields are rejected before they can enter profiles or audit',async()=>{await as();await assert.rejects(action('import',{kind:'faculty',rows:[{code:'QA-PW-LEAK',name:'Must reject',password:'PrivateTest123!'}]}),/account provisioning/);await assert.rejects(action('patron',{code:'QA-PW-LEAK',name:'Must reject',category:'faculty',profile:{password:'PrivateTest123!'}}),/account provisioning/);assert.ok(!(await snap()).patrons.some(p=>p.code==='QA-PW-LEAK'));});
+
+test('imported login links only a matching active patron and forces first password change at database level',async()=>{await as();await db.exec('begin');try{
+ await db.exec('alter table auth.users add column email text');const uid='00000000-0000-0000-0000-000000000019';await db.query('insert into auth.users(id,email) values($1,$2)',[uid,'qa-login@example.invalid']);
+ const p=await action('patron',{code:'QA-LOGIN-F1',name:'Account QA',category:'faculty',institute:'RBCET',email:'qa-login@example.invalid',active:true});
+ const target=(await db.query('select public.library_login_targets($1,$2) d',['RBCET',['QA-LOGIN-F1']])).rows[0].d[0];assert.equal(target.id,p.id);
+ await db.query('select public.library_bind_imported_login($1,$2,$3,$4)',['RBCET',actors.admin,p.id,uid]);await as(uid);
+ assert.equal((await db.query('select public.library_onboarding() d')).rows[0].d.required,true);
+ await db.exec('savepoint gate');await assert.rejects(snap(),/Change your initial password/);await db.exec('rollback to savepoint gate');
+ await db.query('select public.library_complete_first_login($1)',[uid]);assert.equal((await db.query('select public.library_onboarding() d')).rows[0].d.required,false);
+ await db.exec('savepoint stale');await assert.rejects(snap(),/Sign in again/);await db.exec('rollback to savepoint stale');
+ await db.query("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({iat:Math.floor(Date.now()/1000)+10})]);let s=await snap();assert.equal(s.patrons.length,1);assert.equal(s.patrons[0].code,'QA-LOGIN-F1');
+ await as();assert.ok((await snap()).audit.some(a=>a.action==='patron_login_created'));
+}finally{await db.exec('rollback');await as();}});
+
+test('browser roles cannot bind imported accounts or complete the required change themselves',async()=>{await as();await db.exec('set role authenticated');try{await assert.rejects(db.query('select public.library_complete_first_login($1)',[actors.admin]),/permission denied/);await assert.rejects(db.query('select public.library_bind_imported_login($1,$2,$3,$4)',['RBCET',actors.admin,actors.admin,actors.admin]),/permission denied/);}finally{await db.exec('reset role');}await as(actors.assistant);await assert.rejects(db.query('select public.library_login_targets($1,$2)',['RBCET',['RBCET-S001']]),/Access denied/);await as();});

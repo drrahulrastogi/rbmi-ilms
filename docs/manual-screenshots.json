@@ -1,0 +1,210 @@
+{
+  "welcome": [
+    {
+      "file": "login.jpg",
+      "caption": "Sign in with the registered email and password. The public catalogue link is available without signing in."
+    },
+    {
+      "file": "library-rbgn.jpg",
+      "caption": "Use the library selector at the top. RBGN is an independent library; RBCET and RBMI share the central library."
+    }
+  ],
+  "access": [
+    {
+      "file": "settings.jpg",
+      "caption": "Settings contains the librarian assignment and access controls. Only the administrator manages roles and holiday calendars."
+    }
+  ],
+  "passwords": [
+    {
+      "file": "first-login.jpg",
+      "caption": "New imported accounts must enter the initial/current password and choose a different personal password, then sign in again."
+    },
+    {
+      "file": "recovery.jpg",
+      "caption": "Forgot password asks for the registered email. Request the message and use the newest recovery link; never share passwords."
+    }
+  ],
+  "overview": [
+    {
+      "file": "overview.jpg",
+      "caption": "Check the selected library, today\u2019s availability, collection totals, active loans, overdue books and assessed fine balance."
+    }
+  ],
+  "availability": [
+    {
+      "file": "availability.jpg",
+      "caption": "Choose the date, availability and reason. An unavailable date is excluded from fines only for the selected library."
+    }
+  ],
+  "patrons": [
+    {
+      "file": "patrons.jpg",
+      "caption": "Use search, Add patron, Bulk students or Bulk faculty. The institute column distinguishes campuses within the shared library."
+    },
+    {
+      "file": "add-patron.jpg",
+      "caption": "For a faculty membership, choose Faculty and the institute. The patron code identifies the borrowing record."
+    }
+  ],
+  "imports": [
+    {
+      "file": "faculty-import.jpg",
+      "caption": "Download the faculty CSV template, fill its fields and select the file. Password is optional: blank uses INSTITUTE@PATRON_CODE."
+    },
+    {
+      "file": "student-import.jpg",
+      "caption": "Student upload uses its own template. Review the preview and approval checkbox; a real unique email is needed for a new login."
+    },
+    {
+      "file": "book-import.jpg",
+      "caption": "Book CSV upload adds physical copies. Review accessions and barcodes before approving the transactional batch."
+    }
+  ],
+  "catalogue": [
+    {
+      "file": "catalogue.jpg",
+      "caption": "The catalogue separates bibliographic titles from copies. Use Add title, View copies and Bulk upload as appropriate."
+    }
+  ],
+  "marc": [
+    {
+      "file": "catalogue.jpg",
+      "caption": "The MARC21 / MARCXML import panel appears above the catalogue. Select UTF-8 MARC, review the mapped copies and confirm the import."
+    }
+  ],
+  "circulation": [
+    {
+      "file": "circulation.jpg",
+      "caption": "Active loans show patron, accession, due date and actions. Check the issuing library before issue or return."
+    },
+    {
+      "file": "issue.jpg",
+      "caption": "Scan the copy barcode/accession and enter the patron code. The issuing library is shown and recorded."
+    },
+    {
+      "file": "return.jpg",
+      "caption": "After a sample overdue return, the notice shows the fine assessed and the loan moves to Returned loans."
+    },
+    {
+      "file": "receipt.jpg",
+      "caption": "Open Receipt for a returned loan. Verify patron, book, library and fine, then use Print receipt if needed."
+    }
+  ],
+  "holds": [
+    {
+      "file": "holds.jpg",
+      "caption": "The hold queue is scoped to this library. Place hold opens the title and patron form."
+    },
+    {
+      "file": "hold-form.jpg",
+      "caption": "Select the bibliographic title and enter the patron code. The system checks the queue and borrowing eligibility."
+    }
+  ],
+  "fines": [
+    {
+      "file": "fines.jpg",
+      "caption": "A sample assessed fine appears after an overdue return. Review assessed, paid, waived and outstanding amounts."
+    },
+    {
+      "file": "payment.jpg",
+      "caption": "Payment records money already collected at the desk. Enter the amount and receipt/reference; waivers need an approval reason."
+    }
+  ],
+  "acquisitions": [
+    {
+      "file": "acquisitions.jpg",
+      "caption": "Manage budgets, funds, baskets and purchase orders within the selected library."
+    },
+    {
+      "file": "order-form.jpg",
+      "caption": "Choose the vendor, title, optional fund/basket, quantity and invoice reference before saving the order."
+    }
+  ],
+  "authorities": [
+    {
+      "file": "authorities.jpg",
+      "caption": "Authority control standardizes names and subjects. Use Add authority, then Link title to connect records."
+    },
+    {
+      "file": "authority-form.jpg",
+      "caption": "Choose the authority type, enter its heading and add useful variants or notes."
+    }
+  ],
+  "lists": [
+    {
+      "file": "lists.jpg",
+      "caption": "Create a reading list, choose its visibility and add titles. Private lists remain restricted to their owner."
+    }
+  ],
+  "serials": [
+    {
+      "file": "serials.jpg",
+      "caption": "Add subscription begins the journal/periodical workflow; predicted issues appear after the subscription is saved."
+    },
+    {
+      "file": "serial-form.jpg",
+      "caption": "Enter the journal title, frequency, start date and issue count. Review predictions and mark issues received or missing."
+    }
+  ],
+  "search": [
+    {
+      "file": "search.jpg",
+      "caption": "Combine bibliographic, item-status and checkout filters. The result grid and CSV export reflect the chosen criteria."
+    }
+  ],
+  "opac": [
+    {
+      "file": "opac.jpg",
+      "caption": "Choose a library, search for a title and add it to the temporary cart. Only public catalogue fields are displayed."
+    }
+  ],
+  "stock": [
+    {
+      "file": "stock.jpg",
+      "caption": "Start session creates an inventory snapshot. Existing sessions later show scan progress and discrepancies."
+    },
+    {
+      "file": "stock-form.jpg",
+      "caption": "Give the stock-verification session a clear name, start it, then scan copies against that snapshot."
+    }
+  ],
+  "reports": [
+    {
+      "file": "reports.jpg",
+      "caption": "Use standard register exports or the saved report builder. Reports remain scoped to the selected library."
+    }
+  ],
+  "administration": [
+    {
+      "file": "audit.jpg",
+      "caption": "Audit trail records the operator, action, time and non-secret details. Search or expand entries for an authorized review."
+    },
+    {
+      "file": "holiday-calendar.jpg",
+      "caption": "In Settings, download the holiday template and upload approved dates for the selected library. RBGN can have its own list."
+    },
+    {
+      "file": "holiday-form.jpg",
+      "caption": "Add additional holiday records an unplanned closure. Only the administrator can save it; the date is excluded from fines."
+    }
+  ],
+  "deployment": [
+    {
+      "file": "overview.jpg",
+      "caption": "After deployment, verify the library selector and connection indicator. This screenshot is a sample workspace; live mode shows Supabase connected."
+    }
+  ],
+  "backup": [
+    {
+      "file": "reports.jpg",
+      "caption": "Register exports support authorized record review. Follow the backup chapter for database backups; CSV exports are not a complete database backup."
+    }
+  ],
+  "troubleshooting": [
+    {
+      "file": "faculty-import.jpg",
+      "caption": "For import errors, check the template headers, TRUE/FALSE, ISO expiry dates and institute assignment before retrying."
+    }
+  ]
+}

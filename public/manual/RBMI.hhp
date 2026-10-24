@@ -7,10 +7,12 @@ Default topic=index.html
 Display compile progress=Yes
 Full-text search=Yes
 Language=0x409 English (United States)
-Title=RBMI Integrated Library Management System 2.0
+Title=RBMI Integrated Library Management System - Illustrated Manual
 
 [FILES]
 index.html
+printable.html
+user-guide.html
 welcome.html
 access.html
 passwords.html
@@ -37,3 +39,39 @@ backup.html
 troubleshooting.html
 assets/manual.css
 assets/rbmi-logo.png
+assets/screenshots/acquisitions.jpg
+assets/screenshots/add-patron.jpg
+assets/screenshots/audit.jpg
+assets/screenshots/authorities.jpg
+assets/screenshots/authority-form.jpg
+assets/screenshots/availability.jpg
+assets/screenshots/book-import.jpg
+assets/screenshots/catalogue.jpg
+assets/screenshots/circulation.jpg
+assets/screenshots/faculty-import.jpg
+assets/screenshots/fines.jpg
+assets/screenshots/first-login.jpg
+assets/screenshots/hold-form.jpg
+assets/screenshots/holds.jpg
+assets/screenshots/holiday-calendar.jpg
+assets/screenshots/holiday-form.jpg
+assets/screenshots/issue.jpg
+assets/screenshots/library-rbgn.jpg
+assets/screenshots/lists.jpg
+assets/screenshots/login.jpg
+assets/screenshots/opac.jpg
+assets/screenshots/order-form.jpg
+assets/screenshots/overview.jpg
+assets/screenshots/patrons.jpg
+assets/screenshots/payment.jpg
+assets/screenshots/receipt.jpg
+assets/screenshots/recovery.jpg
+assets/screenshots/reports.jpg
+assets/screenshots/return.jpg
+assets/screenshots/search.jpg
+assets/screenshots/serial-form.jpg
+assets/screenshots/serials.jpg
+assets/screenshots/settings.jpg
+assets/screenshots/stock-form.jpg
+assets/screenshots/stock.jpg
+assets/screenshots/student-import.jpg

@@ -20,3 +20,6 @@ RBGN extension: a fourth independent library and fifth-category policy set are a
 
 ## Holiday and faculty update — 23 October 2026
 43 tests pass. Bulk holiday upload validates ISO dates, names, duplicates and row limits atomically; admin-only upload and additional holidays exclude fine days per library. Faculty bulk/individual entry records institute within the assigned library, preserves profiles and uses faculty rules; accidental student-code overwrite and cross-library access are rejected. CSV templates and previews are provided.
+
+## Imported logins and illustrated help - 24 October 2026
+49 tests pass. Live disposable-account tests verify default CSV password creation, existing-password preservation, mandatory first change, stale-token rejection and single-patron privacy. QA identities were removed. Password fields are rejected by patron SQL and stripped before audit/profile writes. Service-only account binding/completion RPCs are inaccessible to browser roles. Security advisors report no errors or mutable search paths. The illustrated guide has 24 bookmarked chapters, 36 original sample screenshots and 40 screen references, with landscape image pages. Purchase-order dialog was opened and visually verified after correcting its initial form values. No real student records or administrator credentials appear in screenshots.

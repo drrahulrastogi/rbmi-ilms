@@ -4,6 +4,9 @@
   "installCommand": "npm ci",
   "buildCommand": "npm test && npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/patron-logins.js": { "maxDuration": 60 }
+  },
   "headers": [
     {
       "source": "/(.*)",
