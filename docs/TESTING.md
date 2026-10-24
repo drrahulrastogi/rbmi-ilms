@@ -1,6 +1,6 @@
 # Current verification
 
-The security/scaling update adds 98 automated tests in total: 19 unit/report, 60 database/installer/security and 19 API fault-injection cases. See [HARDENING.md](HARDENING.md) for the current implementation, real multi-connection PostgreSQL results and synthetic restore drill. The earlier baseline below is retained as audit history; its remaining-improvement list describes the state before the new migration.
+The security/scaling update adds 100 automated tests in total: 19 unit/report, 60 database/installer/security and 21 API fault-injection cases. See [HARDENING.md](HARDENING.md) for the current implementation, real multi-connection PostgreSQL results and synthetic restore drill. The earlier baseline below is retained as audit history; its remaining-improvement list describes the state before the new migration.
 
 # Testing and security review - 24 October 2026
 

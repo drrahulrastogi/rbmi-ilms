@@ -15,9 +15,9 @@ export default secureAccountEndpoint('accounts',['GET','POST'],async(req,res,{cl
  if(action==='create'){
  if(!['librarian','assistant','accountant','auditor'].includes(role)||typeof name!=='string'||!name.trim()||typeof email!=='string'||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return res.status(400).json({error:'Provide a real email, name and permitted role'});
  const {data,error}=await service.auth.admin.inviteUserByEmail(email.trim(),{data:{full_name:name.trim()},redirectTo:'https://rbmi-ilms.vercel.app/?setup=invite'});if(error)return res.status(400).json({error:'Could not send invitation. Check the email and SMTP configuration.'});
+ const setup=await service.rpc('library_mark_invitation',{target:data.user.id});if(setup.error){await service.auth.admin.deleteUser(data.user.id);return res.status(503).json({error:'Invitation setup unavailable; no library role was assigned. Try again later.'});}
  const assignment=await client.rpc('library_action',{i:institution,action:role==='librarian'?'assign_librarian':'member',p:{user_id:data.user.id,display_name:name.trim(),role}});
  if(assignment.error){await service.auth.admin.deleteUser(data.user.id);return res.status(400).json({error:assignment.error.message});}
- const setup=await service.rpc('library_mark_invitation',{target:data.user.id});if(setup.error)return res.status(503).json({error:'Account assigned; administrator must review pending password setup'});
  return res.status(200).json({ok:true,id:data.user.id});
  }
  if(!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(target||''))return res.status(400).json({error:'Select a valid account'});

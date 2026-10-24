@@ -366,7 +366,7 @@
     "intro": "The source repository is drrahulrastogi/rbmi-ilms. The UI and account endpoints run on Vercel; shared records and Auth run on Supabase.",
     "steps": [
       "Install Node.js 20.16 or newer, run npm ci, npm test and npm run build. npm run dev starts local development. Without both Supabase variables it uses fictional browser-local records.",
-      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all twelve migrations and the policy/institution seed. Never run the creation installer over an existing library.",
+      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all thirteen migrations and the policy/institution seed. Never run the creation installer over an existing library.",
       "Disable public signup, keep email/password login enabled, create rahul.r@rbmi.in in Auth and run scripts/bootstrap-admin.sql with its UUID.",
       "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY only as a sensitive server-side Vercel variable; never prefix it with VITE_.",
       "Set Auth Site URL to the HTTPS application; allow /?recovery=1 and /?setup=invite. Configure invite/recovery SMTP and require strong passwords. New invitations use the provider's one-use email link and a 24-hour application setup deadline; provider link expiry may be shorter.",
