@@ -12,7 +12,7 @@ export function secureAccountEndpoint(operation,methods,work){return async(req,r
   const ip=process.env.VERCEL==='1'?String(req.headers['x-vercel-forwarded-for']||req.headers['x-forwarded-for']||req.socket?.remoteAddress||'unknown'):String(req.socket?.remoteAddress||'local');
   const ipHash=createHash('sha256').update(secret+'\0'+ip.split(',')[0].trim()).digest('hex');if(!await quota('preauth','ip:'+ipHash))return;
   const {data:auth,error}=await client.auth.getUser(token);if(error||!auth?.user)return res.status(401).json({error:'Sign in required'});
-  if(!await quota(operation,'user:'+auth.user.id))return;
+  if(!await quota(req.body?.mode==='first_change'?'password':operation,'user:'+auth.user.id))return;
   const {data:security,error:stateError}=await client.rpc('library_security_state');if(stateError||!security)return res.status(503).json({error:'Account security state is unavailable'});
   if(security.mfa_required){let claims;try{claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString());}catch{}if(claims?.aal!=='aal2')return res.status(403).json({error:'Verify your administrator second factor'});}
   return await work(req,res,{client,service,opts,auth,token,url,key});
