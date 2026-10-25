@@ -2,6 +2,11 @@ import React,{useEffect,useRef,useState} from 'react';
 import {demo,supabase,rpc,downloadCSV} from './api';
 import {collectEligible,sendInvitations} from './invitation-batch.mjs';
 const labels={not_created:'No login yet',pending_invite:'Setup invitation pending',existing:'Existing account - retained',inactive:'Inactive membership',expired:'Expired membership',missing_email:'Missing or invalid email'};
+function SelectionCheckbox({label,checked,mixed,disabled,onChange,children}){
+ const input=useRef(null);
+ useEffect(()=>{if(input.current)input.current.indeterminate=Boolean(mixed);},[mixed]);
+ return <label className="checkbox-field selection-checkbox"><input ref={input} type="checkbox" aria-label={label} checked={checked} disabled={disabled} onChange={e=>onChange(e.target.checked)}/><span>{label}{children}</span></label>;
+}
 export function PatronInvitations({institution,campuses}){
  const [category,setCategory]=useState(null),[busy,setBusy]=useState(false);
  return <section className="panel spaced" aria-label="Student and faculty invitations">
@@ -24,6 +29,7 @@ function InvitationList({institution,category,campuses,onBusy}){
  function clearSelection(){setSelected(new Map());setReviewed(false);setNotice('');}
  function choose(rows,remove=false){const next=new Map(selected);for(const row of rows)if(row.eligible){if(remove)next.delete(row.id);else next.set(row.id,row);}if(next.size>5000){setError('Select at most 5,000 people. Narrow the institute or search filter.');return;}setSelected(next);setReviewed(false);}
  const locked=busy||selecting,pendingSearch=draft.trim()!==q,eligiblePage=page.rows.filter(r=>r.eligible),allPage=eligiblePage.length>0&&eligiblePage.every(r=>selected.has(r.id));
+ const allMatching=page.eligible_count>0&&selected.size===page.eligible_count,selectedOnPage=eligiblePage.filter(r=>selected.has(r.id)).length;
  async function selectMatching(){setSelecting(true);setError('');try{const rows=await collectEligible(p=>rpc('library_invitation_candidates_page',p),args,{shouldStop:()=>!active.current});if(active.current){setSelected(new Map(rows.map(r=>[r.id,r])));setReviewed(false);}}catch(e){if(active.current)setError(e.message);}finally{if(active.current)setSelecting(false);}}
  async function send(){
   if(!reviewed||!selected.size||locked)return;
@@ -42,13 +48,13 @@ function InvitationList({institution,category,campuses,onBusy}){
   </div>
   <div className="section-actions">
    <button className="button" disabled={locked||loading||pendingSearch||!eligiblePage.length} onClick={()=>choose(eligiblePage,allPage)}>{allPage?'Deselect eligible on this page':'Select eligible on this page'}</button>
-   <button className="button" disabled={locked||loading||pendingSearch||!page.eligible_count||page.eligible_count>5000} onClick={selectMatching}>{selecting?'Selecting...':`Select all eligible matching (${page.eligible_count})`}</button>
+   <SelectionCheckbox label={category==='student'?'Select all students':'Select all faculty members'} checked={allMatching} mixed={selected.size>0&&!allMatching} disabled={locked||loading||pendingSearch||!page.eligible_count||page.eligible_count>5000} onChange={checked=>checked?selectMatching():clearSelection()}> {selecting?'(selecting...)':`(${page.eligible_count} eligible across all matching pages)`}</SelectionCheckbox>
    <button className="text-button" disabled={locked||!selected.size} onClick={clearSelection}>Clear selection</button>
   </div>
   {page.eligible_count>5000&&<p className="alert">More than 5,000 eligible people match. Narrow the institute or search filter before selecting all.</p>}
   {error&&<p className="alert error" role="alert">{error}</p>}
   <p role="status">{loading?'Loading recipients...':`${page.total} matching ${category==='student'?'students':'faculty members'} - ${page.eligible_count} eligible - ${selected.size} selected`}</p>
-  <div className="table-scroll"><table><thead><tr><th>Select</th><th>Code / name</th><th>Email</th><th>Institute</th><th>Department</th><th>Login status</th></tr></thead><tbody>{!loading&&page.rows.map(r=><tr key={r.id}><td><input type="checkbox" aria-label={'Select '+r.code} disabled={locked||!r.eligible||pendingSearch} checked={selected.has(r.id)} onChange={e=>choose([r],!e.target.checked)}/></td><td><strong>{r.name}</strong><small>{r.code}</small></td><td>{r.email||'No email'}</td><td>{r.institute}</td><td>{r.department||'-'}</td><td>{labels[r.login_status]||r.login_status}</td></tr>)}</tbody></table></div>
+  <div className="table-scroll"><table><thead><tr><th><SelectionCheckbox label="Select all on this page" checked={allPage} mixed={selectedOnPage>0&&!allPage} disabled={locked||loading||pendingSearch||!eligiblePage.length} onChange={checked=>choose(eligiblePage,!checked)}/></th><th>Code / name</th><th>Email</th><th>Institute</th><th>Department</th><th>Login status</th></tr></thead><tbody>{!loading&&page.rows.map(r=><tr key={r.id}><td><input type="checkbox" aria-label={'Select '+r.code} disabled={locked||!r.eligible||pendingSearch} checked={selected.has(r.id)} onChange={e=>choose([r],!e.target.checked)}/></td><td><strong>{r.name}</strong><small>{r.code}</small></td><td>{r.email||'No email'}</td><td>{r.institute}</td><td>{r.department||'-'}</td><td>{labels[r.login_status]||r.login_status}</td></tr>)}</tbody></table></div>
   {!loading&&!page.rows.length&&<p>No matching {category==='student'?'students':'faculty members'} found.</p>}
   <div className="section-actions"><button className="button" disabled={locked||loading||pendingSearch||!history.length} onClick={()=>{setCursor(history.at(-1));setHistory(h=>h.slice(0,-1));}}>Previous recipients</button><span>Page {history.length+1}</span><button className="button" disabled={locked||loading||pendingSearch||!page.next_id} onClick={()=>{setHistory(h=>[...h,cursor]);setCursor(page.next_id);}}>Next recipients</button></div>
   <p>Selection is limited to 5,000 people. Invitations are submitted in batches of ten while this screen stays open. Changing institute, search or recipient type clears selection. Email delivery depends on Supabase/SMTP limits; a provider throttle pauses the queue.</p>
