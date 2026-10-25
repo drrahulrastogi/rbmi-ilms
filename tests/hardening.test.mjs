@@ -19,6 +19,22 @@ test('student circulation, fines and dashboard totals exclude other patrons',asy
   assert.equal(workspace.counts.active_loans,1);assert.equal(Number(workspace.counts.fine_balance),37);
  }finally{await db.exec('rollback');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[actors.admin]);}
 });
+test('issuer names are captured at issue and retained after profile changes and returns',async()=>{
+ await db.exec('begin');
+ try{
+  await db.exec('alter table auth.users add column raw_user_meta_data jsonb');
+  await db.query("update auth.users set raw_user_meta_data=$1 where id=$2",[{full_name:'QA Issuer'},actors.admin]);
+  const target=(await db.query("select c.id copy_id,p.id patron_id from app.copies c cross join app.patrons p where c.institution_id='RBCET' and c.status='available' and p.institution_id='RBCET' limit 1")).rows[0];
+  const issued=(await db.query("insert into app.loans(institution_id,copy_id,patron_id,issued,due,policy,issued_by_name) values('RBCET',$1,$2,app.today(),app.today()+14,'{}','Forged name') returning id,issued_by_name",[target.copy_id,target.patron_id])).rows[0];
+  assert.equal(issued.issued_by_name,'QA Issuer');
+  await db.query("update auth.users set raw_user_meta_data=$1 where id=$2",[{full_name:'Renamed Account'},actors.admin]);
+  await db.query("update app.loans set returned=app.today(),issued_by_name='Replacement' where id=$1",[issued.id]);
+  const page=await rpc('library_records_page',['RBCET','returned_loans',null,100,'']);
+  assert.equal(page.rows.find(l=>l.id===issued.id).issued_by_name,'QA Issuer');
+  await db.exec('set role authenticated');
+  await assert.rejects(db.query("select app.loan_issuer_display_name($1,'RBCET')",[actors.admin]),/permission denied/);
+ }finally{await db.exec('rollback');}
+});
 test('workspace and legacy snapshot remain bounded when patrons/history grow',async()=>{await db.exec("insert into app.patrons(institution_id,code,name,category) select 'RBCET','BOUND-'||n,'Bounded Patron '||n,'student' from generate_series(1,1200) n");for(const name of ['library_workspace','library_snapshot']){const d=await rpc(name,['RBCET']);assert.ok(d.patrons.length<=200);assert.ok(d.counts.patrons>=1200);assert.ok(d.pages.patrons.next_id);}const searched=await rpc('library_records_page',['RBCET','patrons',null,20,'BOUND-1199']);assert.equal(searched.rows.length,1);});
 test('legacy public catalogue and search cap child copies without losing availability counts',async()=>{await db.exec("insert into app.copies(institution_id,title_id,accession,barcode) select 'RBCET',t.id,'BOUND-COPY-'||n,'BOUND-COPY-'||n from generate_series(1,1200) n cross join lateral(select id from app.titles where institution_id='RBCET' order by id limit 1) t");const d=await rpc('library_catalogue_search',['RBCET','',40]);assert.ok(d.copies.length<=400);assert.ok(d.copy_counts.some(c=>c.total>=1200));const legacy=await rpc('library_catalogue',['RBCET']);assert.ok(legacy.copies.length<=400);const title=d.copy_counts.find(c=>c.total>=1200).title_id;let cursor=null,ids=[];do{const page=await rpc('library_public_copies_page',['RBCET',title,cursor,100]);ids.push(...page.rows.map(r=>r.accession));cursor=page.next_id;}while(cursor);assert.ok(ids.length>=1200);assert.equal(ids.length,new Set(ids).size);});
 test('shared API quota is atomic, service-only, rejects arbitrary limits and expires',async()=>{await db.exec('set role authenticated');await assert.rejects(rpc('library_api_quota',['password','user:'+actors.admin]),/permission denied/);await db.exec('reset role');let result;for(let n=0;n<11;n++)result=await rpc('library_api_quota',['password','user:'+actors.admin]);assert.equal(result.allowed,false);assert.ok(result.retry_after>0);await assert.rejects(rpc('library_api_quota',['anything','user:x']));await db.exec("update app.request_buckets set expires_at=now()-interval '1 second'");assert.equal((await rpc('library_api_quota',['password','user:'+actors.admin])).allowed,true);});
