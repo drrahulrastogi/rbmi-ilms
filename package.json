@@ -7,7 +7,7 @@
     "dev": "node scripts/prepare-demo.mjs && vite --host 127.0.0.1",
     "build": "node scripts/prepare-demo.mjs && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test tests/database.test.mjs tests/library-v2.test.mjs tests/marc.test.mjs tests/holiday-import.test.mjs tests/patron-import.test.mjs tests/reports.test.mjs tests/api-security.test.mjs tests/security-adversarial.test.mjs tests/hardening.test.mjs tests/paged-data.test.mjs tests/installer.test.mjs tests/recovery-flow.test.mjs tests/admin-password-reset.test.mjs tests/invitation-batch.test.mjs tests/invitation-candidates.test.mjs",
+    "test": "node --test tests/database.test.mjs tests/library-v2.test.mjs tests/marc.test.mjs tests/holiday-import.test.mjs tests/patron-import.test.mjs tests/reports.test.mjs tests/api-security.test.mjs tests/security-adversarial.test.mjs tests/hardening.test.mjs tests/paged-data.test.mjs tests/installer.test.mjs tests/recovery-flow.test.mjs tests/admin-password-reset.test.mjs tests/invitation-batch.test.mjs tests/invitation-candidates.test.mjs tests/issue-search.test.mjs",
     "test:postgres": "node scripts/postgres-acceptance.mjs",
     "test:load": "node scripts/load-local.mjs",
     "test:ui": "node scripts/browser-test.mjs"
