@@ -19,10 +19,10 @@ export default secureAccountEndpoint('password',['POST'],async(req,res,{client,s
   if(error||verified.user?.id!==auth.user.id)return res.status(403).json({error:'Your current password is incorrect'});
   await verifier.auth.signOut({scope:'local'});
   // Record only actor/target, never credentials. Abort if the audit cannot be written.
-  const {error:auditError}=await service.rpc('library_password_audit',{i:institution,actor_id:auth.user.id,target:targetId,event:mode==='reset'?'password_reset':'password_change'});
+  const {error:auditError}=await service.rpc(mode==='reset'?'library_prepare_admin_password_reset':'library_password_audit',{i:institution,actor_id:auth.user.id,target:targetId,...(mode==='reset'?{}:{event:'password_change'})});
   if(auditError)return res.status(503).json({error:'Unable to record password operation; try again later'});
   const {error:updateError}=await service.auth.admin.updateUserById(targetId,{password});
-  if(updateError)return res.status(400).json({error:'Password update failed. Check the password requirements and try again.'});
-  return res.status(200).json({ok:true});
+  if(updateError)return res.status(400).json({error:mode==='reset'?'Password reset did not finish; account access is blocked pending setup. Retry this reset with another strong temporary password.':'Password update failed. Check the password requirements and try again.'});
+  return res.status(200).json({ok:true,...(mode==='reset'?{mustChange:true}:{})});
  }catch{return res.status(503).json({error:'Password service unavailable; try again later'});}
 });

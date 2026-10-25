@@ -23,7 +23,7 @@
       "A librarian manages the assigned library's catalogue, patrons, circulation, fines, availability, acquisitions, authorities and serials. Each library has a distinct primary librarian.",
       "Assistant operates circulation and holds. Accountant records payments and waivers. Auditor reads records and reports. Staff access is limited to assigned libraries.",
       "Patron sign-ins must be linked to a patron UUID. They see the catalogue and their own loans, holds and fines, and can renew their own loans or manage their own holds.",
-      "Admin opens Settings > Accounts to create staff, update non-admin email addresses or send recovery messages. Sensitive actions require the administrator's current password.",
+      "Admin opens Settings > Accounts and password management to create staff, set temporary passwords directly, update non-admin email addresses or send recovery messages. Sensitive actions require the administrator's current password.",
       "To provision a patron sign-in, create its email/password identity in Supabase Auth, then assign patron role with the linked patron UUID in Institution access."
     ],
     "notes": [
@@ -42,7 +42,7 @@
       "When unable to sign in, choose Forgot password? Recover by email. Enter the registered address and check inbox and spam folders.",
       "Open the newest recovery link. Continue securely if prompted, then enter and save a matching new password. Successful recovery signs you out; sign in with the new password.",
       "Use 12 to 128 characters, including uppercase, lowercase, a number and a symbol. Choose a unique password for each person.",
-      "Admin may reset another assigned account in Settings > Institution access after verifying the person's identity and entering the administrator password. Share the temporary password privately and ask the person to change it.",
+      "Admin opens Settings > Accounts and password management, selects Set temporary password directly, chooses an assigned account and enters matching temporary passwords plus the administrator password. The other person's current password and a reset email are not needed. Share the temporary password privately; the user must choose a different private password at the next sign-in before opening records.",
       "For an expired, incomplete or previously used link, request a new email. Ask admin to correct a wrong registered email.",
       "Administrator: open Settings > Administrator two-step verification, select Set up authenticator, scan the private QR code, and enter its current six-digit code. Select Verify and enable protection. Future administrator sessions must verify the second factor before records or account tools can be accessed."
     ],
@@ -366,7 +366,7 @@
     "intro": "The source repository is drrahulrastogi/rbmi-ilms. The UI and account endpoints run on Vercel; shared records and Auth run on Supabase.",
     "steps": [
       "Install Node.js 20.16 or newer, run npm ci, npm test and npm run build. npm run dev starts local development. Without both Supabase variables it uses fictional browser-local records.",
-      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all thirteen migrations and the policy/institution seed. Never run the creation installer over an existing library.",
+      "For a NEW Supabase project run database/install-new-supabase.sql once, containing all fourteen migrations and the policy/institution seed. Never run the creation installer over an existing library.",
       "Disable public signup, keep email/password login enabled, create rahul.r@rbmi.in in Auth and run scripts/bootstrap-admin.sql with its UUID.",
       "Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the public URL/key. Set SUPABASE_SERVICE_ROLE_KEY only as a sensitive server-side Vercel variable; never prefix it with VITE_.",
       "Set Auth Site URL to the HTTPS application; allow /?recovery=1 and /?setup=invite. Configure invite/recovery SMTP and require strong passwords. New invitations use the provider's one-use email link and a 24-hour application setup deadline; provider link expiry may be shorter.",

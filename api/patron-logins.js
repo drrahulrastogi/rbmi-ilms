@@ -8,9 +8,14 @@ export default secureAccountEndpoint('patron-logins',['POST'],async(req,res,{cli
    const {currentPassword,password,confirmPassword}=req.body;
    const {data:state,error:stateError}=await client.rpc('library_onboarding');
    if(stateError||!state?.required)return res.status(403).json({error:'No initial password change pending'});
+   if(state.stale)return res.status(403).json({error:'Sign out and sign in again with the administrator temporary password before choosing your private password.'});
    if(state.expired)return res.status(403).json({error:'This invitation has expired. Ask your librarian to resend the setup email.'});
    if(!strongPassword(password)||password!==confirmPassword||password===currentPassword)return res.status(400).json({error:'Choose a different password: 12–128 characters, uppercase, lowercase, number and symbol. Both new password entries must match.'});
-   if(state.method!=='invite'){
+   if(state.method==='admin_reset'){
+    const verifier=createClient(url,key,opts),{data:v,error:ve}=await verifier.auth.signInWithPassword({email:auth.user.email,password});
+    if(!ve){await verifier.auth.signOut({scope:'local'});return res.status(400).json({error:'Choose a private password different from the administrator temporary password.'});}
+    if(ve.status!==400||!['invalid_credentials','invalid_login_credentials'].includes(ve.code))return res.status(503).json({error:'Could not verify the new password securely. Please retry later.'});
+   }else if(state.method!=='invite'){
    if(typeof currentPassword!=='string')return res.status(400).json({error:'Current password required'});
    const verifier=createClient(url,key,opts),{data:v,error:ve}=await verifier.auth.signInWithPassword({email:auth.user.email,password:currentPassword});
    if(ve||v.user?.id!==auth.user.id)return res.status(403).json({error:'Your initial/current password is incorrect'});
