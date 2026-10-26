@@ -1,13 +1,25 @@
 import {createClient} from '@supabase/supabase-js';
 import {actors,authStub,seedDemo} from '../scripts/demo.mjs';
+import {authStorageKey,isSessionFailure,endBrowserSession} from './session-flow.mjs';
 const url=import.meta.env.VITE_SUPABASE_URL, key=import.meta.env.VITE_SUPABASE_ANON_KEY;
 if(Boolean(url)!==Boolean(key)) throw new Error('Set both Supabase environment variables, or leave both blank for demo.');
 export const demo=!url;
-export const supabase=demo?null:createClient(url,key);
+const storageKey=demo?null:authStorageKey(url);
+export const supabase=demo?null:createClient(url,key,{auth:{storageKey}});
+let signingOut;
+export function returnToSignIn(reason='signed_out',options={}){
+ if(demo)return Promise.resolve();
+ if(!signingOut){
+  let storage;try{storage=window.localStorage;}catch{}
+  signingOut=endBrowserSession({client:supabase,storage,key:storageKey,path:window.location.pathname,
+   reason,scope:options.scope||'local',skipRemote:options.skipRemote??['password_changed','session_expired'].includes(reason),navigate:path=>window.location.replace(path)});
+ }
+ return signingOut;
+}
 export const assetURL=path=>import.meta.env.BASE_URL+path.replace(/^\//,'');
 let dbPromise;
 async function database(){if(!dbPromise)dbPromise=(async()=>{const {PGlite}=await import('@electric-sql/pglite');const db=new PGlite('idb://rbmi-library-v3-security');await db.waitReady;const existing=await db.query("select 1 from pg_namespace where nspname='app'");if(!existing.rows.length){const files=await Promise.all(['demo/migration.sql','demo/seed.sql'].map(async path=>{const res=await fetch(assetURL(path));if(!res.ok)throw new Error('Demo SQL unavailable');return res.text();}));await db.exec('begin;'+authStub+files.join('\n'));await seedDemo(db);const upgrades=await fetch(assetURL('demo/upgrades.sql'));if(!upgrades.ok)throw Error('Demo upgrade unavailable');await db.exec(await upgrades.text());await db.exec('commit;');}await db.query("select set_config('request.jwt.claim.sub',$1,false)",[actors[sessionStorage.getItem('rbmi-role')||'admin']]);return db;})();return dbPromise;}
-export async function rpc(name,args={}){if(!demo){const {data,error}=await supabase.rpc(name,args);if(error)throw new Error(error.message);return data;}const db=await database();const keys={library_institute_titles_page:['library_code','institute','q','after_id','page_size'],library_institute_copies_page:['library_code','title','institute','after_id','page_size'],library_audit_detail:['i','event_id','part'],library_security_state:[],library_enable_admin_mfa:[],library_records_page:['i','kind','after_id','page_size','q'],library_report_page:['i','report_id','after_id','page_size','q'],library_public_titles_page:['library_code','q','after_id','page_size'],library_public_copies_page:['library_code','title','after_id','page_size'],library_bootstrap:[],library_onboarding:[],library_snapshot:['i'],library_workspace:['i'],library_collection_page:['i','kind','after_id','page_size'],library_action:['i','action','p'],library_report:['i','report_id'],library_catalogue:['library_code'],library_catalogue_search:['library_code','q','max_titles']}[name];const r=await db.query(`select public.${name}(${keys.map((_,n)=>'$'+(n+1)).join(',')}) as data`,keys.map(k=>args[k]));return r.rows[0].data;}
+export async function rpc(name,args={}){if(!demo){const {data,error}=await supabase.rpc(name,args);if(error){if(isSessionFailure(error))void returnToSignIn('session_expired');throw new Error(error.message);}return data;}const db=await database();const keys={library_institute_titles_page:['library_code','institute','q','after_id','page_size'],library_institute_copies_page:['library_code','title','institute','after_id','page_size'],library_audit_detail:['i','event_id','part'],library_security_state:[],library_enable_admin_mfa:[],library_records_page:['i','kind','after_id','page_size','q'],library_report_page:['i','report_id','after_id','page_size','q'],library_public_titles_page:['library_code','q','after_id','page_size'],library_public_copies_page:['library_code','title','after_id','page_size'],library_bootstrap:[],library_onboarding:[],library_snapshot:['i'],library_workspace:['i'],library_collection_page:['i','kind','after_id','page_size'],library_action:['i','action','p'],library_report:['i','report_id'],library_catalogue:['library_code'],library_catalogue_search:['library_code','q','max_titles']}[name];const r=await db.query(`select public.${name}(${keys.map((_,n)=>'$'+(n+1)).join(',')}) as data`,keys.map(k=>args[k]));return r.rows[0].data;}
 export async function demoRole(role){sessionStorage.setItem('rbmi-role',role);const db=await database();await db.query("select set_config('request.jwt.claim.sub',$1,false)",[actors[role]]);}
 export function today(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
 export function money(n){return new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n||0));}

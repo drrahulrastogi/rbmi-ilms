@@ -19,3 +19,8 @@
 /* Catalogue institute selectors work at desk and phone widths. */
 .catalogue-institute-filter{display:flex;align-items:center;gap:20px;margin-bottom:16px}.catalogue-institute-filter label{display:grid;gap:6px;font-weight:600;min-width:200px}.public-catalogue .search-filters{grid-template-columns:minmax(180px,1fr) minmax(160px,.65fr) minmax(220px,1.5fr)}
 @media(max-width:760px){.catalogue-institute-filter{align-items:stretch;flex-direction:column;gap:10px}.public-catalogue .search-filters{grid-template-columns:1fr}}
+
+/* Keep sign-out available when navigation is collapsed or account loading fails. */
+.topbar .top-right{min-width:0}.topbar #institution{max-width:min(35vw,360px)}.session-sign-out{flex-shrink:0;white-space:nowrap}
+@media(max-width:1200px){.topbar .connection{display:none}}
+@media(max-width:760px){.topbar{height:auto;min-height:65px;flex-wrap:wrap;padding-top:12px;padding-bottom:12px}.topbar .top-right{width:100%;flex-wrap:wrap;justify-content:space-between}.topbar #institution{flex:1;min-width:0;max-width:calc(100% - 110px)}}
