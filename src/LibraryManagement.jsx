@@ -7,34 +7,4 @@ export function Availability({data,admin,librarian,busy,form,run}){
 }
 function TableLite({rows,columns,onEdit,canEdit,busy}){return <div className="table-scroll"><table><thead><tr>{columns.map(c=><th key={c}>{{day:'Date',available:'Status',reason:'Reason'}[c]||c}</th>)}{onEdit&&<th>Actions</th>}</tr></thead><tbody>{rows.slice(0,40).map(r=><tr key={r.day}>{columns.map(c=><td key={c}>{typeof r[c]==='boolean'?(r[c]?'Available':'Unavailable — no fine'):String(r[c]??'')}</td>)}{onEdit&&<td>{canEdit(r)&&<button className="button small" disabled={busy} aria-label={'Edit availability for '+r.day} onClick={()=>onEdit(r)}>Edit</button>}</td>}</tr>)}</tbody></table>{!rows.length&&<p className="drawer-description">No availability exceptions recorded. Unmarked dates use the normal calendar.</p>}</div>;}
 
-export function Accounts({institution,onChanged}){
- const [accounts,setAccounts]=useState([]),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[mode,setMode]=useState('create'),[target,setTarget]=useState(''),[nextPage,setNextPage]=useState(null),[ownId,setOwnId]=useState(null);
- async function request(method,body,page=1){
-  const {data}=await supabase.auth.getSession();setOwnId(data.session?.user?.id);
-  const direct=body?.action==='reset_password',payload=direct?{...body,mode:'reset'}:body;
-  const response=await fetch(direct?'/api/password':'/api/accounts?page='+page,{method,headers:{Authorization:'Bearer '+data.session?.access_token,'Content-Type':'application/json'},...(payload?{body:JSON.stringify({...payload,institution})}:{})});
-  const answer=await response.json();if(!response.ok)throw Error(answer.error||'Account operation failed');return answer;
- }
- async function load(page=1){try{const a=await request('GET',null,page);setAccounts(old=>page===1?a.users:[...old,...a.users]);setNextPage(a.nextPage);}catch(e){setError(e.message);}}
- useEffect(()=>{if(!demo){setTarget('');setError('');setNotice('');load();}},[institution]);
- if(demo)return <p className="alert">Account creation, direct password resets and email recovery are available in live mode.</p>;
- const direct=mode==='reset_password';
- return <section className="panel spaced">
-  <div className="panel-heading"><div><h2>Accounts and password management</h2><p>Administrator controls for {institution}. Select the account's assigned library before resetting its password.</p></div></div>
-  <div className="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Account ID</th><th>Password</th></tr></thead><tbody>{accounts.map(a=><tr key={a.id}><td>{a.name}</td><td>{a.email}</td><td><code>{a.id}</code></td><td>{a.id!==ownId&&<button className="button small" disabled={busy} onClick={()=>{setMode('reset_password');setTarget(a.id);setError('');setNotice('');document.getElementById('account-operation')?.scrollIntoView({behavior:'smooth',block:'center'});}}>Set temporary password</button>}</td></tr>)}</tbody></table></div>
-  {nextPage&&<button className="button" disabled={busy} onClick={()=>load(nextPage)}>Load more accounts</button>}
-  <form className="editor-form" key={mode+':'+target+':'+institution} onSubmit={async e=>{
-   e.preventDefault();const form=e.currentTarget;setBusy(true);setError('');setNotice('');const body=Object.fromEntries(new FormData(form));
-   try{await request('POST',{...body,action:mode,target});form.reset();setNotice(direct?'Temporary password set. Share it privately with the account owner. They must choose a different private password before accessing library records.':mode==='create'?'Account assigned; invitation email requested so the user can choose a private password.':mode==='update_email'?'Account email updated.':'Recovery email requested. Delivery requires configured SMTP.');await load();await onChanged();}catch(err){setError(err.message);}finally{setBusy(false);}
-  }}>
-   <label>Operation<select id="account-operation" disabled={busy} value={mode} onChange={e=>{setMode(e.target.value);setError('');setNotice('');}}><option value="create">Create account</option><option value="reset_password">Set temporary password directly (no email needed)</option><option value="update_email">Correct account email</option><option value="send_reset">Send password recovery email</option></select></label>
-   {mode!=='create'&&<label>Account<select disabled={busy} required value={target} onChange={e=>{setTarget(e.target.value);setError('');setNotice('');}}><option value="">Select account…</option>{accounts.filter(a=>!direct||a.id!==ownId).map(a=><option key={a.id} value={a.id}>{a.name} — {a.email}</option>)}</select></label>}
-   {['create','update_email'].includes(mode)&&<label>{mode==='create'?'Email':'Correct verified email'}<input name="email" type="email" required/></label>}
-   {mode==='create'&&<><label>Full name<input name="name" required/></label><label>Role<select name="role"><option value="librarian">Librarian for this library</option>{['assistant','accountant','auditor'].map(r=><option key={r}>{r}</option>)}</select></label><p>An invitation email lets this person choose their password. No default password is created.</p></>}
-   {direct&&<><p>You do not need this person's current password. Set a unique temporary password, share it privately and verify the recipient's identity. This does not bypass email verification or MFA. Use Change my password for your own account.</p><label>New temporary password<input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required/></label><label>Confirm temporary password<input name="confirmPassword" type="password" autoComplete="new-password" minLength={12} maxLength={128} required/></label><p>Use 12–128 characters with uppercase, lowercase, a number and a symbol. Passwords are never included in audit logs.</p></>}
-   <label>Your administrator password (not the user's password)<input name="currentPassword" type="password" autoComplete="current-password" required/></label>
-   {error&&<p className="alert error" role="alert">{error}</p>}{notice&&<p className="alert success" role="status">{notice}</p>}
-   <button className="button primary" disabled={busy}>{busy?'Saving…':direct?'Set temporary password':'Apply account change'}</button>
-  </form>
- </section>;
-}
+export {Accounts} from './Accounts';

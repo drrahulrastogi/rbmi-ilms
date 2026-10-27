@@ -19,3 +19,7 @@ test('suggestions stay bounded and do not offer every copy for an empty query',(
  assert.deepEqual(availableBookSuggestions(titles,many,'ह','RBCET'),[]);
  assert.deepEqual(availableBookSuggestions(titles,[{...copies[0],title_id:'unknown'}],'BOOK','RBCET'),[]);
 });
+
+test('a single-digit accession can select a copy without broad one-letter title matches',()=>{
+ const one={...copies[0],id:'one',accession:'1'};assert.equal(availableBookSuggestions(titles,[...copies,one],'1','RBCET')[0].id,'one');
+});

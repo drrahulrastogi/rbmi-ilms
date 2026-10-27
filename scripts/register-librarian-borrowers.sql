@@ -1,5 +1,5 @@
 -- Operator setup for the existing, verified designated librarians.
--- Creates borrowing memberships, not Auth accounts or additional staff roles.
+-- Creates borrower records in each library; login access stays in the assigned library.
 -- Reuses an unambiguous existing borrower and never resets a password.
 begin;
 do $$
@@ -56,6 +56,7 @@ begin
     values(library.id,administrator,'librarian_borrower_registered',
       jsonb_build_object('patron_id',borrower.id,'code',borrower.code,'user_id',colleague.user_id,'home_library',colleague.home_library));
    end if;
+   if library.id<>colleague.home_library then continue;end if;
    existing_role:=null;linked_patron:=null;
    select role,patron_id into existing_role,linked_patron from app.memberships
     where user_id=colleague.user_id and institution_id=library.id for update;

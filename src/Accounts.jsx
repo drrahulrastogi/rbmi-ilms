@@ -1,0 +1,30 @@
+import React,{useEffect,useRef,useState} from 'react';
+import {demo,supabase} from './api';
+export function Accounts({institution,onChanged}){
+ const [accounts,setAccounts]=useState([]),[query,setQuery]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[mode,setMode]=useState('create'),[target,setTarget]=useState(''),[nextCursor,setNextCursor]=useState(null),[ownId,setOwnId]=useState(null);const generation=useRef(0);
+ async function request(method,body,cursor=null,signal){
+  const {data}=await supabase.auth.getSession();setOwnId(data.session?.user?.id);
+  const direct=body?.action==='reset_password',params=new URLSearchParams({institution,q:query,...(cursor?{after:cursor}:{})});
+  const response=await fetch(direct?'/api/password':'/api/accounts?'+params,{method,signal,headers:{Authorization:'Bearer '+data.session?.access_token,'Content-Type':'application/json'},...(body?{body:JSON.stringify({...body,institution,...(direct?{mode:'reset'}:{})})}:{})});
+  const result=await response.json();if(!response.ok)throw Error(result.error||'Account operation failed');return result;
+ }
+ async function load(cursor=null,signal){const current=++generation.current;setLoading(true);try{const a=await request('GET',null,cursor,signal);if(current===generation.current){setAccounts(old=>cursor?[...old,...a.users]:a.users);setNextCursor(a.nextCursor);}}catch(e){if(!signal?.aborted&&current===generation.current)setError(e.message);}finally{if(current===generation.current)setLoading(false);}}
+ useEffect(()=>{if(demo)return;const controller=new AbortController();setAccounts([]);setNextCursor(null);setTarget('');setError('');const timer=setTimeout(()=>load(null,controller.signal),300);return()=>{controller.abort();clearTimeout(timer);generation.current++;};},[institution,query]);
+ if(demo)return <p className="alert">Account and password management is available in live mode.</p>;
+ const direct=mode==='reset_password';
+ return <section className="panel spaced"><div className="panel-heading"><div><h2>Accounts and password management</h2><p>Administrator controls for {institution}. Search covers all accounts assigned to this library.</p></div></div>
+  <div className="report-filters"><label>Search accounts by name or email<input type="search" value={query} maxLength={200} disabled={busy} onChange={e=>setQuery(e.target.value)} placeholder="Student, faculty or staff name"/></label><p role="status">{loading?'Searching accounts…':`${accounts.length} matching accounts loaded`}</p></div>
+  <div className="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Account ID</th><th>Password</th></tr></thead><tbody>{accounts.map(a=><tr key={a.id}><td>{a.name}</td><td>{a.email}</td><td><code>{a.id}</code></td><td>{a.id!==ownId&&<button className="button small" disabled={busy||loading} onClick={()=>{setMode('reset_password');setTarget(a.id);setError('');setNotice('');document.getElementById('account-operation')?.scrollIntoView({behavior:'smooth',block:'center'});}}>Set temporary password</button>}</td></tr>)}</tbody></table></div>
+  {nextCursor&&<button className="button" disabled={busy||loading} onClick={()=>load(nextCursor)}>Load more matching accounts</button>}
+  <form className="editor-form" key={mode+':'+target+':'+institution} onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;setBusy(true);setError('');setNotice('');const body=Object.fromEntries(new FormData(form));try{await request('POST',{...body,action:mode,target});form.reset();setNotice(direct?'Temporary password set. Share it privately with the account owner; they must change it at the next sign-in.':mode==='create'?'Account assigned; invitation email requested.':mode==='update_email'?'Account email updated.':'Recovery email requested.');await load();await onChanged();}catch(e){setError(e.message);}finally{setBusy(false);}}}>
+   <label>Operation<select id="account-operation" disabled={busy} value={mode} onChange={e=>{setMode(e.target.value);setError('');setNotice('');}}><option value="create">Create account</option><option value="reset_password">Set temporary password directly</option><option value="update_email">Correct account email</option><option value="send_reset">Send password recovery email</option></select></label>
+   {mode!=='create'&&<label>Account<select disabled={busy||loading} required value={target} onChange={e=>setTarget(e.target.value)}><option value="">Select account…</option>{accounts.filter(a=>!direct||a.id!==ownId).map(a=><option key={a.id} value={a.id}>{a.name} — {a.email}</option>)}</select></label>}
+   {['create','update_email'].includes(mode)&&<label>{mode==='create'?'Email':'Correct verified email'}<input name="email" type="email" required/></label>}
+   {mode==='create'&&<><label>Full name<input name="name" required/></label><label>Role<select name="role"><option value="librarian">Librarian for this library</option>{['assistant','accountant','auditor'].map(r=><option key={r}>{r}</option>)}</select></label><p>An invitation email lets this person choose a private password.</p></>}
+   {direct&&<><p>Verify the account owner's identity and share the temporary password privately. The person must choose a different password at the next sign-in.</p><label>New temporary password<input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required/></label><label>Confirm temporary password<input name="confirmPassword" type="password" autoComplete="new-password" minLength={12} maxLength={128} required/></label><p>Use uppercase, lowercase, a number and a symbol.</p></>}
+   <label>Your administrator password<input name="currentPassword" type="password" autoComplete="current-password" required/></label>
+   {error&&<p className="alert error" role="alert">{error}</p>}{notice&&<p className="alert success" role="status">{notice}</p>}
+   <button className="button primary" disabled={busy||loading}>{busy?'Saving…':direct?'Set temporary password':'Apply account change'}</button>
+  </form>
+ </section>;
+}

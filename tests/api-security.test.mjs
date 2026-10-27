@@ -10,7 +10,14 @@ function setup(routes={}){
  process.env.VITE_SUPABASE_URL='https://qa.example.invalid';process.env.VITE_SUPABASE_ANON_KEY='qa-anon';process.env.SUPABASE_SERVICE_ROLE_KEY='qa-service';const calls=[];
  globalThis.fetch=async(input,init={})=>{const u=new URL(typeof input==='string'?input:input.url),path=u.pathname;calls.push({path,body:init.body});let result=routes[path];if(result===undefined){if(path==='/auth/v1/user')result={id:uid,email:'admin@example.invalid'};else if(path==='/rest/v1/rpc/library_api_quota')result={allowed:true};else if(path==='/rest/v1/rpc/library_security_state')result={admin:false,mfa_required:false};else throw Error('Unexpected external request '+path);}if(typeof result==='function')result=result(init);if(result instanceof Response)return result;return new Response(JSON.stringify(result),{status:200,headers:{'content-type':'application/json'}});};return calls;
 }
-async function invoke(handler,{method='POST',body={},token='qa-token'}={}){const result={headers:{},statusCode:200};const res={setHeader:(k,v)=>result.headers[k]=v,status:c=>(result.statusCode=c,res),json:b=>(result.body=b,result)};await handler({method,body,headers:token?{authorization:'Bearer '+token}:{}},res);return result;}
+async function invoke(handler,{method='POST',body={},token='qa-token',query={}}={}){const result={headers:{},statusCode:200};const res={setHeader:(k,v)=>result.headers[k]=v,status:c=>(result.statusCode=c,res),json:b=>(result.body=b,result)};await handler({method,body,query,headers:token?{authorization:'Bearer '+token}:{}},res);return result;}
+
+test('account name search uses the selected library and never lists the whole Auth directory',async()=>{
+ const calls=setup({'/rest/v1/rpc/library_bootstrap':{memberships:[{institution_id:'RBCP',role:'admin'}]},'/rest/v1/rpc/library_account_search':{users:[{id:uid,name:'Rekha',email:'rekha@example.invalid'}],nextCursor:null}});
+ const result=await invoke(accounts,{method:'GET',query:{institution:'RBCP',q:'Rekha'}});assert.equal(result.statusCode,200);assert.equal(result.body.users[0].name,'Rekha');
+ const call=calls.find(c=>c.path.endsWith('library_account_search'));assert.deepEqual(JSON.parse(call.body),{i:'RBCP',q:'Rekha',after_id:null,page_size:100});assert.ok(!calls.some(c=>c.path.includes('/admin/users')));
+ assert.equal((await invoke(accounts,{method:'GET',query:{institution:'RBCET',q:'Rekha'}})).statusCode,403);
+});
 test('all account endpoints reject anonymous requests before network or credential access',async()=>{let count=0;globalThis.fetch=()=>{count++;throw Error('Network forbidden');};for(const h of [accounts,password,patrons]){const r=await invoke(h,{token:null});assert.equal(r.statusCode,401);assert.equal(r.headers['Cache-Control'],'no-store');}assert.equal(count,0);});
 test('unsupported methods are rejected before authentication',async()=>{for(const h of [accounts,password,patrons])assert.equal((await invoke(h,{method:'DELETE'})).statusCode,405);});
 test('missing server configuration fails closed',async()=>{delete process.env.SUPABASE_SERVICE_ROLE_KEY;for(const h of [accounts,password,patrons])assert.equal((await invoke(h)).statusCode,503);});

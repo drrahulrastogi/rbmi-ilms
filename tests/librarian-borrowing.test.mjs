@@ -30,17 +30,19 @@ before(async()=>{
  registration=await readFile('scripts/register-librarian-borrowers.sql','utf8');
 });
 after(async()=>db.close());
-test('all librarians get borrowing memberships while staff permissions stay in their assigned library',async()=>{
+test('all librarians get borrower records while login stays in their assigned library',async()=>{
  const authCount=(await db.query('select count(*) n from auth.users')).rows[0].n;
  await db.exec(registration);
  const rows=(await db.query("select m.*,s.institution_id home_library,p.category,p.email from app.library_staff s join app.memberships m on m.user_id=s.user_id join app.patrons p on p.id=m.patron_id order by s.institution_id,m.institution_id")).rows;
- assert.equal(rows.length,16);
+ assert.equal(rows.length,4);
  assert.ok(rows.every(r=>r.category==='staff'&&r.role===(r.institution_id===r.home_library?'librarian':'patron')));
+ assert.equal((await db.query("select count(*) n from app.patrons where profile->>'registration_type'='librarian_borrower'")).rows[0].n,16);
  assert.equal((await db.query('select count(*) n from auth.users')).rows[0].n,authCount);
  await as(pharmacy);
  const bootstrap=(await db.query('select public.library_bootstrap() d')).rows[0].d;
- assert.equal(bootstrap.memberships.length,4);
- assert.ok(bootstrap.memberships.every(m=>m.role===(m.institution_id==='RBCP'?'librarian':'patron')));
+ assert.equal(bootstrap.memberships.length,1);
+ assert.equal(bootstrap.memberships[0].institution_id,'RBCP');
+ assert.equal(bootstrap.memberships[0].role,'librarian');
 });
 test('re-running registration reuses borrowers and produces no duplicate memberships or audit events',async()=>{
  const before=(await db.query("select (select count(*) from app.patrons) patrons,(select count(*) from app.memberships) memberships,(select count(*) from app.audit) audit")).rows[0];
@@ -48,7 +50,7 @@ test('re-running registration reuses borrowers and produces no duplicate members
  const after=(await db.query("select (select count(*) from app.patrons) patrons,(select count(*) from app.memberships) memberships,(select count(*) from app.audit) audit")).rows[0];
  assert.deepEqual(after,before);
 });
-test('a librarian issues to a colleague, who sees only their own loan and cannot operate the other library',async()=>{
+test('a librarian can issue to a colleague whose login cannot enter the issuing library',async()=>{
  await as(actors.librarian);
  const borrower=(await db.query("select * from app.patrons where code='RBCET-LIB-RBCP'")).rows[0];
  const copy=(await db.query("select c.* from app.copies c where c.institution_id='RBCET' and c.status='available' and not exists(select 1 from app.holds h where h.title_id=c.title_id and h.status='waiting') limit 1")).rows[0];
@@ -56,14 +58,23 @@ test('a librarian issues to a colleague, who sees only their own loan and cannot
  assert.equal(loan.patron_id,borrower.id);assert.equal(loan.issued_by,actors.librarian);
  assert.equal(loan.issue_library_code,'RBCET');
  await as(pharmacy);
- const workspace=(await db.query("select public.library_workspace('RBCET') d")).rows[0].d;
- assert.ok(workspace.loans.some(l=>l.id===loan.id));assert.ok(workspace.loans.every(l=>l.patron_id===borrower.id));
- assert.ok(workspace.patrons.every(p=>p.id===borrower.id));
+ await assert.rejects(db.query("select public.library_workspace('RBCET')"),/Access denied/);
  await assert.rejects(action('RBCET','issue',{library_code:'RBCET',barcode:copy.barcode,patron_code:borrower.code}),/Patrons may only|Access denied/);
  await assert.rejects(action('RBCET','return',{library_code:'RBCET',id:loan.id}),/Patrons may only|Access denied/);
  await assert.rejects(action('RBCP','return',{library_code:'RBCP',id:loan.id}),/Loan not found|issuing library/);
  await as(actors.librarian);await action('RBCET','return',{library_code:'RBCET',id:loan.id});
  assert.ok((await db.query('select returned from app.loans where id=$1',[loan.id])).rows[0].returned);
+});
+
+test('a stale or accidentally re-added borrower membership cannot reopen another library',async()=>{
+ await db.query("insert into app.memberships(user_id,institution_id,role,patron_id) select $1,'RBCET','patron',id from app.patrons where code='RBCET-LIB-RBCP'",[pharmacy]);
+ await as(pharmacy);
+ assert.equal((await db.query("select app.role_for('RBCET') r")).rows[0].r,null);
+ assert.equal((await db.query('select public.library_bootstrap() d')).rows[0].d.memberships.length,1);
+ await assert.rejects(db.query("select public.library_collection_page('RBCET','copies',null,10)"),/Access denied/);
+ await db.query("delete from app.memberships where user_id=$1 and institution_id='RBCET'",[pharmacy]);
+ await as(actors.admin);
+ assert.equal((await db.query('select public.library_bootstrap() d')).rows[0].d.memberships.length,4);
 });
 test('registration refuses to reactivate an administrator-disabled borrowing membership',async()=>{
  await db.query("update app.patrons set active=false where code='RBCET-LIB-RBCP'");

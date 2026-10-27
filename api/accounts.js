@@ -5,9 +5,11 @@ export default secureAccountEndpoint('accounts',['GET','POST'],async(req,res,{cl
  if(bootError||!Array.isArray(boot?.memberships)||!boot.memberships.some(m=>m?.role==='admin'))return res.status(403).json({error:'Network administrator required'});
  try{
  if(req.method==='GET'){
- const page=Number(req.query?.page||1);if(!Number.isInteger(page)||page<1||page>1000)return res.status(400).json({error:'Invalid account page'});
- const {data,error}=await service.auth.admin.listUsers({page,perPage:100});if(error)throw error;const users=data.users.map(u=>({id:u.id,email:u.email,name:u.user_metadata?.full_name||u.email}));
- return res.status(200).json({users,nextPage:users.length===100?page+1:null});}
+ const institution=String(req.query?.institution||''),q=String(req.query?.q||'').trim(),after=String(req.query?.after||'');
+ if(!boot.memberships.some(m=>m.institution_id===institution&&m.role==='admin'))return res.status(403).json({error:'Select an authorized library'});
+ if(q.length>200||(after&&!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(after)))return res.status(400).json({error:'Invalid account search'});
+ const {data,error}=await service.rpc('library_account_search',{i:institution,q,after_id:after||null,page_size:100});if(error)throw error;
+ return res.status(200).json(data);}
  const {action,institution,currentPassword,email,name,password,role,target}=req.body||{};
  if(!boot.memberships.some(m=>m.institution_id===institution&&m.role==='admin'))return res.status(403).json({error:'Library administrator required'});
  if(!['create','update_email','send_reset'].includes(action)||typeof currentPassword!=='string')return res.status(400).json({error:'Valid account operation required'});
