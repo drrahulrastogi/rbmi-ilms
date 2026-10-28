@@ -1,6 +1,9 @@
 import {createClient} from '@supabase/supabase-js';
 import {actors,authStub,seedDemo} from '../scripts/demo.mjs';
 import {authStorageKey,isSessionFailure,endBrowserSession} from './session-flow.mjs';
+import {readRecoveryLink} from './recovery-link.mjs';
+// Capture the recovery callback before Auth initializes and removes URL credentials.
+export const recoveryEntry=readRecoveryLink(window.location);
 const url=import.meta.env.VITE_SUPABASE_URL, key=import.meta.env.VITE_SUPABASE_ANON_KEY;
 if(Boolean(url)!==Boolean(key)) throw new Error('Set both Supabase environment variables, or leave both blank for demo.');
 export const demo=!url;

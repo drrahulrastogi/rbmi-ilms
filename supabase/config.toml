@@ -16,3 +16,7 @@ enable_signup = false
 minimum_password_length = 12
 password_requirements = "lower_upper_letters_digits_symbols"
 additional_redirect_urls = ["http://localhost:5173/?recovery=1"]
+
+[auth.email.template.recovery]
+subject = "Reset your RBMI library password"
+content_path = "./supabase/templates/recovery.html"

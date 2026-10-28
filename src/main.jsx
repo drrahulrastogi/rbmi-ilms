@@ -5,6 +5,7 @@ import {FirstLogin} from './FirstLogin';
 import {Notifications} from './Notifications';
 import {Circulation} from './Circulation';
 import {LibraryCard} from './LibraryCard';
+import {recoveryEntry} from './api';
 import {isCurrentSession,isSessionFailure} from './session-flow.mjs';
 import {selectWorkspaceInstitution} from './workspace-selection.mjs';
 import {IssueForm} from './IssueForm';
@@ -32,7 +33,7 @@ const field=(name,label,type='text',extra={})=>({name,label,type,...extra});
 function App(){
  const [security,setSecurity]=useState(null),[mfaReady,setMfaReady]=useState(false),[setup,setSetup]=useState({});
  const [requiresPassword,setRequiresPassword]=useState(false),[accountResults,setAccountResults]=useState([]);
- const [opac,setOpac]=useState(new URLSearchParams(location.search).get('opac')==='1'),[recovery,setRecovery]=useState(new URLSearchParams(location.search).get('recovery')==='1'||location.hash.includes('type=recovery')),[recoverySession,setRecoverySession]=useState(false),[forgot,setForgot]=useState(false),[session,setSession]=useState(null),[ready,setReady]=useState(demo),[members,setMembers]=useState([]),[institution,setInstitution]=useState('RBCET'),[data,setData]=useState(empty),[page,setPage]=useState('Overview'),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[search,setSearch]=useState(''),[drawer,setDrawer]=useState(null),[importer,setImporter]=useState(null),[mobile,setMobile]=useState(false),[demoSelection,setDemoSelection]=useState(sessionStorage.getItem('rbmi-role')||'admin');
+ const [opac,setOpac]=useState(new URLSearchParams(location.search).get('opac')==='1'),[recovery,setRecovery]=useState(recoveryEntry.requested),[recoverySession,setRecoverySession]=useState(false),[forgot,setForgot]=useState(new URLSearchParams(location.search).get('forgot')==='1'),[session,setSession]=useState(null),[ready,setReady]=useState(demo),[members,setMembers]=useState([]),[institution,setInstitution]=useState('RBCET'),[data,setData]=useState(empty),[page,setPage]=useState('Overview'),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState(''),[notice,setNotice]=useState(''),[search,setSearch]=useState(''),[drawer,setDrawer]=useState(null),[importer,setImporter]=useState(null),[mobile,setMobile]=useState(false),[demoSelection,setDemoSelection]=useState(sessionStorage.getItem('rbmi-role')||'admin');
  const [membersOwnerId,setMembersOwnerId]=useState(null),[signingOut,setSigningOut]=useState(false);
  const [cardPatron,setCardPatron]=useState(null);
  useEffect(()=>setCardPatron(null),[institution,session?.user?.id]);
@@ -97,8 +98,8 @@ function App(){
  if(import.meta.env.DEV&&new URLSearchParams(location.search).get('manual-preview')==='forgot')return <ForgotPassword onBack={()=>{}}/>;
  if(import.meta.env.DEV&&new URLSearchParams(location.search).get('manual-preview')==='first-login')return <FirstLogin onFinish={()=>{}}/>;
  if(opac)return <PublicCatalogue onClose={()=>{setOpac(false);history.replaceState({},'',location.pathname);}}/>;
- if(recovery&&!demo)return <Recovery recoverySession={recoverySession} onFinish={()=>{setRecovery(false);setRecoverySession(false);setSession(null);}}/>;
- if(forgot&&!demo)return <ForgotPassword onBack={()=>setForgot(false)}/>;
+ if(recovery&&!demo)return <Recovery recoverySession={recoverySession}/>;
+ if(forgot&&!demo)return <ForgotPassword onBack={()=>{setForgot(false);history.replaceState({},'',location.pathname);}}/>;
  if(!ready)return <Loading/>;
  if(!demo&&session&&security?.mfa_required&&!mfaReady)return <AdminMFA required onSignOut={()=>signOut()} onVerified={()=>{setMfaReady(true);boot();}}/>;
  if(!demo&&session&&requiresPassword)return <FirstLogin setup={setup} onFinish={signOut}/>;
