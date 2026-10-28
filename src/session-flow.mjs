@@ -4,7 +4,7 @@ export function isSessionFailure(error){
  const code=String(error?.code||'');
  return ['PGRST301','refresh_token_not_found','refresh_token_already_used','session_not_found'].includes(code)||
   error?.name==='AuthSessionMissingError'||
-  /sign in again after changing your initial password|jwt (?:is )?expired|invalid (?:jwt|refresh token)|auth session missing|session (?:is )?(?:expired|missing)/i.test(error?.message||'');
+  /student account is passed out and disabled|sign in again after changing your initial password|jwt (?:is )?expired|invalid (?:jwt|refresh token)|auth session missing|session (?:is )?(?:expired|missing)/i.test(error?.message||'');
 }
 
 export function isCurrentSession(owner,token,activeOwner,activeToken){return owner===activeOwner&&token===activeToken;}
@@ -22,7 +22,7 @@ export async function endBrowserSession({client,storage,key,navigate,path='/',re
   for(const suffix of ['','-code-verifier','-user']){
    try{storage?.removeItem(key+suffix);}catch{/* A disabled browser store must not trap the sign-out screen. */}
   }
-  const marker=reason==='password_changed'?'password_changed':reason==='session_expired'?'expired':'1';
+  const marker=reason==='password_changed'?'password_changed':reason==='session_expired'?'expired':reason==='passed_out'?'passed_out':'1';
   navigate(path+'?signed_out='+marker);
  }
 }

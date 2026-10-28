@@ -1,0 +1,29 @@
+.theme-toggle{position:fixed;right:18px;top:15px;z-index:20;display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #b7cabc;border-radius:7px;background:#fff;color:#173f31;font:600 12px Arial,sans-serif;cursor:pointer}.theme-toggle:focus-visible{outline:3px solid #2f9d70;outline-offset:3px}.topbar{padding-right:120px!important}.opac header{padding-right:120px}.badge.passed_out{background:#fbe6df;color:#8b3525}.course-settings p{line-height:1.5}.course-settings .table-scroll{overflow:auto}.membership-state{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+:root[data-theme="dark"]{color-scheme:dark;background:#101714;color:#e5eee8}
+[data-theme="dark"] body,[data-theme="dark"] .app,[data-theme="dark"] .main,[data-theme="dark"] .opac{background:#101714;color:#e5eee8}
+[data-theme="dark"] .sidebar{background:#15231b;color:#e5eee8;border-color:#35493d}
+[data-theme="dark"] .sidebar nav button{color:#bdcebf}
+[data-theme="dark"] .sidebar nav button.active,[data-theme="dark"] .sidebar nav button:hover{background:#2a4935;color:#edfff1}
+[data-theme="dark"] .network,[data-theme="dark"] .sidebar-bottom .network{background:#203527;color:#d8ebdf;border-color:#35493d}
+[data-theme="dark"] .user,[data-theme="dark"] .sidebar-bottom{color:#e5eee8;border-color:#35493d}
+[data-theme="dark"] .sidebar .brand-logo{background:white;border-radius:5px}
+[data-theme="dark"] .topbar,[data-theme="dark"] .panel,[data-theme="dark"] .stat,[data-theme="dark"] .book-card,[data-theme="dark"] .drawer,[data-theme="dark"] .login form,[data-theme="dark"] .notification-list,[data-theme="dark"] .opac article,[data-theme="dark"] .opac aside{background:#19251f;color:#e5eee8;border-color:#35493d}
+[data-theme="dark"] h1,[data-theme="dark"] h2,[data-theme="dark"] h3,[data-theme="dark"] strong,[data-theme="dark"] .person-cell,[data-theme="dark"] .collection-number,[data-theme="dark"] .stat>strong{color:#eef8f0}
+[data-theme="dark"] p,[data-theme="dark"] .muted,[data-theme="dark"] small,[data-theme="dark"] .drawer-description,[data-theme="dark"] .health-legend,[data-theme="dark"] .breadcrumb,[data-theme="dark"] .stat-top{color:#b9ccbf}
+[data-theme="dark"] input,[data-theme="dark"] select,[data-theme="dark"] textarea{background:#101b15;color:#eef8f0;border-color:#5c7565}
+[data-theme="dark"] input::placeholder,[data-theme="dark"] textarea::placeholder{color:#9bb4a4}
+[data-theme="dark"] label,[data-theme="dark"] .eyebrow,[data-theme="dark"] .sidebar-label{color:#c5d8cb}
+[data-theme="dark"] .button,[data-theme="dark"] .theme-toggle,[data-theme="dark"] .quick-actions button,[data-theme="dark"] .notification-menu>summary{background:#22362a;color:#e8f4eb;border-color:#5c7565}
+[data-theme="dark"] .button.primary{background:#347952;color:white;border-color:#60b77f}
+[data-theme="dark"] .text-button,[data-theme="dark"] a{color:#8cddb0}
+[data-theme="dark"] th,[data-theme="dark"] .toolbar,[data-theme="dark"] .panel-heading,[data-theme="dark"] .drawer-header,[data-theme="dark"] .quick-icon{background:#1b2b21;color:#d3e6d9;border-color:#35493d}
+[data-theme="dark"] td,[data-theme="dark"] tr,[data-theme="dark"] .book-card,[data-theme="dark"] .drawer section,[data-theme="dark"] .notification-list article{border-color:#35493d}
+[data-theme="dark"] tbody tr:hover{background:#243c2d}
+[data-theme="dark"] .alert,[data-theme="dark"] .demo-bar{background:#223b2c;color:#e0f0e5;border-color:#547d61}
+[data-theme="dark"] .alert.error,[data-theme="dark"] .badge.passed_out{background:#4b2926;color:#ffd3ca;border-color:#a65b4b}
+[data-theme="dark"] .card-preview{background:#25372b}
+[data-theme="dark"] .library-card,[data-theme="dark"] .library-card strong,[data-theme="dark"] .library-card h3,[data-theme="dark"] .library-card p{color:#173f31!important;background:white}
+[data-theme="dark"] .badge.active{background:#264e35;color:#baf5c8}
+[data-theme="dark"] .badge.inactive{background:#44423b;color:#e2ded0}
+@media(max-width:760px){.theme-toggle{right:10px;top:12px;padding:8px}.topbar{padding-right:94px!important}.opac header{padding-right:94px}}
+@media print{.theme-toggle{display:none!important}}
