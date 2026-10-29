@@ -1,6 +1,7 @@
 import {createClient} from '@supabase/supabase-js';
 import {strongPassword} from '../server/patron-credentials.mjs';
 import {secureAccountEndpoint} from '../server/account-security.mjs';
+import {librarySiteURL} from '../server/site-url.mjs';
 export const config={maxDuration:60};
 export default secureAccountEndpoint('patron-logins',['POST'],async(req,res,{client,service,opts,auth,token,url,key})=>{
  try{
@@ -44,11 +45,11 @@ export default secureAccountEndpoint('patron-logins',['POST'],async(req,res,{cli
    if(p.expired===true){results.push({code:p.code,status:'expired',message:'Renew the membership before sending an invitation.'});continue;}
    if(p.linked_user){
     if(p.pending_invite&&req.body.resend===true){const {data:target,error}=await service.auth.admin.getUserById(p.linked_user);if(error||target.user?.email?.toLowerCase()!==p.email?.trim().toLowerCase()){results.push({code:p.code,status:'review',message:'Account email differs; administrator review required'});continue;}
-     const sent=await service.auth.resetPasswordForEmail(target.user.email,{redirectTo:'https://rbmi-ilms.vercel.app/?setup=invite'});if(sent.error){if(throttled(sent.error))return pause(p.code);if(sent.error.status>=500||sent.error.status===0)return unavailable(p.code);results.push({code:p.code,status:'review',message:'Setup email could not be sent; check SMTP or retry later'});continue;}
+     const sent=await service.auth.resetPasswordForEmail(target.user.email,{redirectTo:librarySiteURL()+'/?setup=invite'});if(sent.error){if(throttled(sent.error))return pause(p.code);if(sent.error.status>=500||sent.error.status===0)return unavailable(p.code);results.push({code:p.code,status:'review',message:'Setup email could not be sent; check SMTP or retry later'});continue;}
      const refreshed=await service.rpc('library_refresh_invitation',{target:p.linked_user});results.push({code:p.code,status:refreshed.error?'review':'resent',message:refreshed.error?'Email requested, but setup deadline could not be refreshed. Administrator review required; do not repeatedly resend.':'A new setup email was requested; earlier expired links should be discarded'});
     }else results.push({code:p.code,status:p.pending_invite?'pending_invite':'existing',message:p.pending_invite?'Invitation awaiting password setup. Resend if the email has expired.':'Existing login retained; password unchanged'});continue;}
    if(typeof p.email!=='string'||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(p.email)||p.email.toLowerCase().endsWith('.invalid')){results.push({code:p.code,status:'missing_email',message:'A real, unique email address is required for login'});continue;}
-   const {data:created,error:ce}=await service.auth.admin.inviteUserByEmail(p.email.trim(),{data:{full_name:p.name},redirectTo:'https://rbmi-ilms.vercel.app/?setup=invite'});
+   const {data:created,error:ce}=await service.auth.admin.inviteUserByEmail(p.email.trim(),{data:{full_name:p.name},redirectTo:librarySiteURL()+'/?setup=invite'});
    if(ce||!created?.user){if(throttled(ce))return pause(p.code);if(ce?.status>=500||ce?.status===0)return unavailable(p.code);results.push({code:p.code,status:'review',message:'Account could not be created. Check SMTP and whether the email is already used; existing accounts are never overwritten or automatically linked.'});continue;}
    const {error:bindError}=await service.rpc('library_bind_imported_login',{i:institution,actor_id:auth.user.id,patron:p.id,target:created.user.id});
    if(bindError){await service.auth.admin.deleteUser(created.user.id);results.push({code:p.code,status:'review',message:'Could not link account to this membership; retry or ask administrator'});continue;}

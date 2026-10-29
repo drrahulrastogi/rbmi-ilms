@@ -1,11 +1,12 @@
 import {createClient} from '@supabase/supabase-js';
 import {createHash,randomUUID} from 'node:crypto';
+import {librarySiteURL} from '../server/site-url.mjs';
 
-const site='https://rbmi-ilms.vercel.app';
 export default async function recovery(req,res){
  const requestId=randomUUID(),started=Date.now();
  res.setHeader('Cache-Control','no-store');res.setHeader('X-Request-ID',requestId);
  try{
+  const site=librarySiteURL();
   if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'POST required'});}
   const origins=new Set([site,'https://rbmi-ilms-engg1.vercel.app']);
   if(process.env.VERCEL_URL)origins.add('https://'+process.env.VERCEL_URL);

@@ -1,5 +1,6 @@
 import {createClient} from '@supabase/supabase-js';
 import {secureAccountEndpoint} from '../server/account-security.mjs';
+import {librarySiteURL} from '../server/site-url.mjs';
 export default secureAccountEndpoint('accounts',['GET','POST'],async(req,res,{client,service,opts,auth,token,url,key})=>{
  const {data:boot,error:bootError}=await client.rpc('library_bootstrap');
  if(bootError||!Array.isArray(boot?.memberships)||!boot.memberships.some(m=>m?.role==='admin'))return res.status(403).json({error:'Network administrator required'});
@@ -16,7 +17,7 @@ export default secureAccountEndpoint('accounts',['GET','POST'],async(req,res,{cl
  const verify=createClient(url,key,opts);const {data:v,error:ve}=await verify.auth.signInWithPassword({email:auth.user.email,password:currentPassword});if(ve||v.user?.id!==auth.user.id)return res.status(403).json({error:'Your administrator password is incorrect'});await verify.auth.signOut({scope:'local'});
  if(action==='create'){
  if(!['librarian','assistant','accountant','auditor'].includes(role)||typeof name!=='string'||!name.trim()||typeof email!=='string'||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return res.status(400).json({error:'Provide a real email, name and permitted role'});
- const {data,error}=await service.auth.admin.inviteUserByEmail(email.trim(),{data:{full_name:name.trim()},redirectTo:'https://rbmi-ilms.vercel.app/?setup=invite'});if(error)return res.status(400).json({error:'Could not send invitation. Check the email and SMTP configuration.'});
+ const {data,error}=await service.auth.admin.inviteUserByEmail(email.trim(),{data:{full_name:name.trim()},redirectTo:librarySiteURL()+'/?setup=invite'});if(error)return res.status(400).json({error:'Could not send invitation. Check the email and SMTP configuration.'});
  const setup=await service.rpc('library_mark_invitation',{target:data.user.id});if(setup.error){await service.auth.admin.deleteUser(data.user.id);return res.status(503).json({error:'Invitation setup unavailable; no library role was assigned. Try again later.'});}
  const assignment=await client.rpc('library_action',{i:institution,action:role==='librarian'?'assign_librarian':'member',p:{user_id:data.user.id,display_name:name.trim(),role}});
  if(assignment.error){await service.auth.admin.deleteUser(data.user.id);return res.status(400).json({error:assignment.error.message});}
@@ -33,7 +34,7 @@ export default secureAccountEndpoint('accounts',['GET','POST'],async(req,res,{cl
  return res.status(200).json({ok:true});}
  const targetEmail=targetData.user.email;
  if(targetEmail?.endsWith('.invalid'))return res.status(400).json({error:'Replace the sample address with a real email first'});
- const {error}=await service.auth.resetPasswordForEmail(targetEmail,{redirectTo:'https://rbmi-ilms.vercel.app/?recovery=1'});if(error)return res.status(503).json({error:'Recovery email could not be sent. Check the Supabase SMTP configuration.'});
+ const {error}=await service.auth.resetPasswordForEmail(targetEmail,{redirectTo:librarySiteURL()+'/?recovery=1'});if(error)return res.status(503).json({error:'Recovery email could not be sent. Check the Supabase SMTP configuration.'});
  await service.rpc('library_refresh_invitation',{target});
  return res.status(200).json({ok:true});
  }catch{return res.status(503).json({error:'Account service unavailable; try again later'});}

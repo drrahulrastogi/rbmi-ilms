@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import handler from '../api/recovery.js';
 import {readRecoveryLink,confirmRecoveryLink} from '../src/recovery-link.mjs';
 import {requestPasswordRecovery} from '../src/recovery-flow.mjs';
+import {librarySiteURL} from '../server/site-url.mjs';
 
 const originalFetch=globalThis.fetch,originalEnv={...process.env};
-afterEach(()=>{globalThis.fetch=originalFetch;for(const k of ['VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VERCEL_URL','VERCEL']){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
+afterEach(()=>{globalThis.fetch=originalFetch;for(const k of ['VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VERCEL_URL','VERCEL','APP_URL']){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
 function setup(recover={},quota={allowed:true}){
  process.env.VITE_SUPABASE_URL='https://qa.example.invalid';process.env.VITE_SUPABASE_ANON_KEY='qa-public';process.env.SUPABASE_SERVICE_ROLE_KEY='qa-private';delete process.env.VERCEL;
  const calls=[];globalThis.fetch=async(input,init)=>{const url=new URL(input);calls.push({url,init,body:JSON.parse(init.body||'{}')});const payload=url.pathname==='/rest/v1/rpc/library_api_quota'?quota:recover;return payload instanceof Response?payload:new Response(JSON.stringify(payload),{status:200,headers:{'Content-Type':'application/json'}});};return calls;
@@ -21,6 +22,17 @@ test('anonymous reset request uses fixed callback, hashed quotas, no identity lo
 });
 test('invalid input, foreign origins, oversized bodies and unsupported methods cannot send email',async()=>{
  const calls=setup();for(const [options,status] of [[{method:'GET'},405],[{body:{email:'bad'}},400],[{body:{email:'sample@example.invalid'}},400],[{body:{email:'reader@example.test',redirectTo:'https://attacker.example'}},400],[{body:{email:'x'.repeat(1100)}},413],[{headers:{origin:'https://attacker.example'}},403],[{headers:{'sec-fetch-site':'cross-site'}},403],[{headers:{'content-type':'application/x-www-form-urlencoded'}},415]])assert.equal((await invoke(options)).status,status);assert.equal(calls.length,0);
+});
+
+test('clone recovery uses the configured site and still rejects arbitrary origins',async()=>{
+ const calls=setup();process.env.APP_URL='https://rbmi-library-clone.vercel.app';
+ assert.equal((await invoke({headers:{origin:process.env.APP_URL}})).status,200);
+ assert.equal(calls.find(c=>c.url.pathname==='/auth/v1/recover').url.searchParams.get('redirect_to'),process.env.APP_URL+'/?recovery=1');
+ const count=calls.length;assert.equal((await invoke({headers:{origin:'https://attacker.example'}})).status,403);assert.equal(calls.length,count);
+});
+
+test('site configuration rejects non-HTTPS, embedded credentials and URL paths',()=>{
+ for(const value of ['http://example.com','https://user:password@example.com','https://example.com/path','https://example.com/?redirect=other','https://example.com/#fragment']){process.env.APP_URL=value;assert.throws(()=>librarySiteURL());}
 });
 test('failed security quota stops upstream requests and throttles without revealing identity',async()=>{
  let calls=setup({},{});assert.equal((await invoke()).status,503);assert.equal(calls.length,1);
