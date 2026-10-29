@@ -8,6 +8,7 @@ import {librarySiteURL} from '../server/site-url.mjs';
 const originalFetch=globalThis.fetch,originalEnv={...process.env};
 afterEach(()=>{globalThis.fetch=originalFetch;for(const k of ['VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','VERCEL_URL','VERCEL','APP_URL']){if(originalEnv[k]===undefined)delete process.env[k];else process.env[k]=originalEnv[k];}});
 function setup(recover={},quota={allowed:true}){
+ delete process.env.APP_URL;
  process.env.VITE_SUPABASE_URL='https://qa.example.invalid';process.env.VITE_SUPABASE_ANON_KEY='qa-public';process.env.SUPABASE_SERVICE_ROLE_KEY='qa-private';delete process.env.VERCEL;
  const calls=[];globalThis.fetch=async(input,init)=>{const url=new URL(input);calls.push({url,init,body:JSON.parse(init.body||'{}')});const payload=url.pathname==='/rest/v1/rpc/library_api_quota'?quota:recover;return payload instanceof Response?payload:new Response(JSON.stringify(payload),{status:200,headers:{'Content-Type':'application/json'}});};return calls;
 }
