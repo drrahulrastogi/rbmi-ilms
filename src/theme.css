@@ -6,7 +6,7 @@
 [data-theme="dark"] .sidebar nav button.active,[data-theme="dark"] .sidebar nav button:hover{background:#2a4935;color:#edfff1}
 [data-theme="dark"] .network,[data-theme="dark"] .sidebar-bottom .network{background:#203527;color:#d8ebdf;border-color:#35493d}
 [data-theme="dark"] .user,[data-theme="dark"] .sidebar-bottom{color:#e5eee8;border-color:#35493d}
-[data-theme="dark"] .sidebar .brand-logo{background:white;border-radius:5px}
+[data-theme="dark"] .sidebar .brand-logo{background:transparent}
 [data-theme="dark"] .topbar,[data-theme="dark"] .panel,[data-theme="dark"] .stat,[data-theme="dark"] .book-card,[data-theme="dark"] .drawer,[data-theme="dark"] .login form,[data-theme="dark"] .notification-list,[data-theme="dark"] .opac article,[data-theme="dark"] .opac aside{background:#19251f;color:#e5eee8;border-color:#35493d}
 [data-theme="dark"] h1,[data-theme="dark"] h2,[data-theme="dark"] h3,[data-theme="dark"] strong,[data-theme="dark"] .person-cell,[data-theme="dark"] .collection-number,[data-theme="dark"] .stat>strong{color:#eef8f0}
 [data-theme="dark"] p,[data-theme="dark"] .muted,[data-theme="dark"] small,[data-theme="dark"] .drawer-description,[data-theme="dark"] .health-legend,[data-theme="dark"] .breadcrumb,[data-theme="dark"] .stat-top{color:#b9ccbf}
