@@ -9,3 +9,5 @@ await cp('docs/help','public/manual',{recursive:true});
 const migrations=(await readdir('supabase/migrations')).filter(x=>x.endsWith('.sql')).sort();
 await copyFile('supabase/migrations/20261028132148_accession_and_student_lifecycle.sql','public/demo/lifecycle.sql');
 await writeFile('public/demo/upgrades.sql',(await Promise.all(migrations.slice(1).map(x=>readFile('supabase/migrations/'+x,'utf8')))).join('\n'));
+
+await copyFile('supabase/migrations/20261102024955_donation_and_fine_registers.sql','public/demo/registers.sql');
