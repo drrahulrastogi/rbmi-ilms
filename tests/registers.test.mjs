@@ -42,3 +42,10 @@ test('donor PDF contains the name, combined books and RBMI logo on every page',a
  const doc=await buildRegisterPDF(d.title,d.lines,d.columns,d.rows,{logoBytes:await readFile('public/rbmi-logo.png'),closingLines:d.closingLines});
  const pdf=doc.output();const pages=doc.getNumberOfPages();assert.ok(pages>1);assert.ok(pdf.includes('/Subtype /Image'));assert.equal((pdf.match(/\/I0 Do/g)||[]).length,pages);
 });
+
+
+test('payments PDF includes receipt numbers, collector names, dates and total',async()=>{
+ const {paymentsDocument}=await import('../src/register-print.mjs');
+ const d=paymentsDocument([{slip_no:'RBCET-F-2026-000001',patron_name:'QA Student',patron_code:'123',amount:6,actor_name:'QA Librarian',reason:'Cash fine',collected_on:'2026-11-02'}],'RBCET',{slip_no:'RBCET-LIST-2026-000002',actor_name:'QA Librarian'});
+ assert.equal(d.title,'Payments');assert.ok(d.lines.includes('Total collected: INR 6.00'));assert.deepEqual(d.rows[0],['RBCET-F-2026-000001','QA Student / 123','6.00','QA Librarian','Cash fine','2026-11-02']);
+});

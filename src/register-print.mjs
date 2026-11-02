@@ -36,3 +36,9 @@ export function donationDocument(ack,library){
  ]};
 }
 export function donationAcknowledgement(ack,library){const d=donationDocument(ack,library);return registerPDF(d.title,d.lines,d.columns,d.rows,{closingLines:d.closingLines});}
+
+export function paymentsDocument(rows,library,slip){return {title:'Payments',lines:[
+ 'Library: '+library,'Slip number: '+receiptNumber(slip),'Prepared by: '+(slip.actor_name||'Name not recorded'),
+ 'Total payments: '+rows.length,'Total collected: INR '+rows.reduce((n,r)=>n+Number(r.amount),0).toFixed(2)
+ ],columns:['Slip number','Borrower / code','Amount (INR)','Collected by','Reason / receipt','Collection date'],
+ rows:rows.map(r=>[receiptNumber(r),r.patron_name+' / '+r.patron_code,Number(r.amount).toFixed(2),r.actor_name||'Name not recorded',r.reason,r.collected_on])};}

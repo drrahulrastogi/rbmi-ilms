@@ -21,3 +21,5 @@ await copyFile('supabase/migrations/20261102084456_named_numbered_slips.sql','pu
 await copyFile('supabase/migrations/20261102091740_borrower_payment_receipts.sql','public/demo/borrower-receipts.sql');
 
 await copyFile('supabase/migrations/20261102124927_donor_acknowledgements_full_fine.sql','public/demo/donor-full-fine.sql');
+
+await copyFile('supabase/migrations/20261102142307_disable_fine_waivers.sql','public/demo/no-waivers.sql');

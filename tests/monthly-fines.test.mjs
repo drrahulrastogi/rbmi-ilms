@@ -125,3 +125,15 @@ test('fractional fine rounds up to whole rupees and cannot be underpaid via dire
  assert.equal(Number((await db.query('select amount from app.payments where id=$1',[r.id])).rows[0].amount),3);assert.equal(Number((await quote(l.id)).balance),0);
  }finally{await db.exec('rollback');}
 });
+
+
+test('nobody can waive a fine, including admin, librarian and accountant',async()=>{
+ const fine=(await db.query('select id from app.fines where loan_id=$1',[loans[0].id])).rows[0].id;
+ for(const actor of [actors.admin,actors.librarian,actors.accountant,actors.assistant,actors.patron]){
+  await as(actor);await assert.rejects(action('waive',{id:fine,amount:1,reason:'Forbidden waiver'}),/waivers are disabled for everyone/);
+ }
+ await as(actors.librarian);
+ await assert.rejects(db.query('update app.fines set waived=1,amount=amount+1 where id=$1',[fine]),/waivers are disabled/);
+ await assert.rejects(db.query("insert into app.payments(institution_id,fine_id,kind,amount,reason,actor) values('RBCET',$1,'waiver',1,'Forbidden',$2)",[fine,actors.librarian]),/waivers are disabled/);
+ assert.equal(Number((await db.query('select waived from app.fines where id=$1',[fine])).rows[0].waived),0);
+});
