@@ -137,3 +137,24 @@ test('nobody can waive a fine, including admin, librarian and accountant',async(
  await assert.rejects(db.query("insert into app.payments(institution_id,fine_id,kind,amount,reason,actor) values('RBCET',$1,'waiver',1,'Forbidden',$2)",[fine,actors.librarian]),/waivers are disabled/);
  assert.equal(Number((await db.query('select waived from app.fines where id=$1',[fine])).rows[0].waived),0);
 });
+
+
+test('accountant workspace and APIs expose only fine accounting',async()=>{
+ await as(actors.accountant);
+ const w=(await db.query("select public.library_workspace('RBCET') d")).rows[0].d;
+ assert.equal(w.accountant_only,true);assert.equal(w.titles,undefined);assert.equal(w.patrons,undefined);
+ for(const sql of ["select public.library_snapshot('RBCET')", "select public.library_collection_page('RBCET','titles',null,10)","select public.library_course_policies('RBCET')", "select public.library_register_page('RBCET','acquisitions',null,null,'',null,10)","select public.library_records_page('RBCET','patrons',null,10,'')"]){await assert.rejects(db.query(sql),/limited to fine accounting/);}
+ await assert.rejects(action('title',{title:'Not allowed',author:'QA'}),/limited to fine verification/);
+ const register=(await db.query("select public.library_register_page('RBCET','collections',null,null,'',null,10) d")).rows[0].d;assert.ok(register.rows.length);
+ await as(actors.librarian);
+});
+
+test('month-wise consolidation preserves verified totals and librarian-visible verification',async()=>{
+ await as(actors.accountant);
+ const report=(await db.query("select public.library_fine_months('RBCET',$1,app.today(),true) d",[month])).rows[0].d;
+ const row=report.rows.find(r=>r.month===month);assert.ok(row);assert.equal(row.status,'verified');assert.equal(Number(row.total),50);assert.equal(Number(row.pending),0);assert.equal(row.verification_reference,'QA-MONTH');assert.ok(row.verified_by_name);
+ await as(actors.librarian);
+ const own=(await db.query("select public.library_fine_months('RBCET',$1,app.today(),false) d",[month])).rows[0].d;assert.equal(own.rows.find(r=>r.month===month).verified_by_name,row.verified_by_name);
+ await assert.rejects(db.query("select public.library_fine_months('RBCET',$1,app.today(),true)",[month]),/Only Accounts or admin/);
+ await as(actors.patron);await assert.rejects(db.query("select public.library_fine_months('RBCET',$1,app.today(),false)",[month]),/Access denied/);await as(actors.librarian);
+});
