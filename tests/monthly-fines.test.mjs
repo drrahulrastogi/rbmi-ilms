@@ -82,3 +82,24 @@ test('slips use stored staff names, permanent unique numbers and safe list-print
  await as(actors.patron);await assert.rejects(print(),/Access denied/);
  await db.exec('set role authenticated');try{await assert.rejects(db.query('select * from app.print_slips'),/permission denied/);await assert.rejects(db.query("select app.new_slip_number('RBCET','F',current_date)"),/permission denied/);}finally{await db.exec('reset role');}
 });
+
+
+test('borrower downloads only their own paid receipts with original names and slip numbers',async()=>{
+ await as(actors.patron);
+ const receipts=async(cursor=null,size=100,i='RBCET')=>(await db.query('select public.library_my_receipts($1,$2,$3) d',[i,cursor,size])).rows[0].d;
+ const first=await receipts(null,1);assert.equal(first.total,2);assert.equal(first.rows.length,1);assert.ok(first.next_id);
+ const second=await receipts(first.next_id,1);assert.equal(second.rows.length,1);assert.notEqual(first.rows[0].id,second.rows[0].id);
+ const ownFine=(await db.query('select id from app.fines where loan_id=$1',[loans[0].id])).rows[0].id;
+ const ownPayments=(await db.query('select * from app.payments where fine_id=$1 order by id',[ownFine])).rows;
+ assert.deepEqual((await receipts()).rows.map(r=>r.id),ownPayments.map(r=>r.id));
+ const row=first.rows[0],original=ownPayments.find(p=>p.id===row.id);assert.equal(row.slip_no,original.slip_no);assert.equal(row.actor_name,original.actor_name);
+ assert.ok(!('actor' in row));assert.ok(!('patron_id' in row));assert.ok(!('request_key' in row));assert.ok(!('fine_id' in row));
+ await assert.rejects(receipts(null,201),/Invalid receipt page/);assert.equal((await receipts(null,10,'RBCP')).total,0);await assert.rejects(receipts(null,10,'NO_LIBRARY'),/Access denied/);
+ const foreign=(await db.query('select id from app.payments where fine_id<>$1 limit 1',[ownFine])).rows[0];assert.ok(!(await receipts(foreign.id)).rows.some(r=>r.id===foreign.id));
+ const ownId=(await db.query("select patron_id from app.memberships where user_id=$1 and institution_id='RBCET'",[actors.patron])).rows[0].patron_id;
+ await db.query('update app.memberships set patron_id=$1 where user_id=$2 and institution_id=$3',[loans[1].patron_id,actors.patron,'RBCET']);
+ assert.ok((await receipts()).rows.every(r=>!ownPayments.some(p=>p.id===r.id)));
+ await db.query('update app.memberships set patron_id=$1 where user_id=$2 and institution_id=$3',[ownId,actors.patron,'RBCET']);
+ await as(actors.librarian);await assert.rejects(receipts(),/Access denied/);
+ await db.exec('set role anon');try{await assert.rejects(receipts(),/permission denied/);}finally{await db.exec('reset role');}
+});
