@@ -2,12 +2,13 @@ export async function buildRegisterPDF(title,lines,columns=[],rows=[],{logoBytes
  const [{jsPDF},{default:autoTable}]=await Promise.all([import('jspdf'),import('jspdf-autotable')]);
  const doc=new jsPDF();if(!logoBytes)throw Error('RBMI logo could not be loaded');
  const logo=new Uint8Array(logoBytes),image=doc.getImageProperties(logo),logoHeight=42*image.height/image.width;
+ const fineReport=/fine|payment|collection|deposit/i.test(title);
  let y=43;doc.setFontSize(10);
- function write(line){const wrapped=doc.splitTextToSize(String(line),180);if(y+wrapped.length*5>275){doc.addPage();y=43;}doc.text(wrapped,14,y);y+=wrapped.length*5+3;}
+ function write(line){const wrapped=doc.splitTextToSize(String(line),180);if(y+wrapped.length*5>275){doc.addPage();y=43;}doc.setTextColor(...(fineReport&&/INR\s*[\d,]/.test(String(line))?[139,0,0]:[0,0,0]));doc.text(wrapped,14,y);y+=wrapped.length*5+3;}
  for(const line of lines)write(line);
- if(columns.length){autoTable(doc,{startY:y,head:[columns],body:rows,styles:{fontSize:9},margin:{top:43,bottom:20}});y=doc.lastAutoTable.finalY+10;}
+ if(columns.length){autoTable(doc,{startY:y,head:[columns],body:rows,styles:{fontSize:9},margin:{top:43,bottom:20},didParseCell:data=>{if(fineReport&&data.section==='body'&&/INR|amount/i.test(columns[data.column.index]))data.cell.styles.textColor=[139,0,0];}});y=doc.lastAutoTable.finalY+10;}
  for(const line of closingLines)write(line);
- for(let page=1;page<=doc.getNumberOfPages();page++){doc.setPage(page);doc.addImage(logo,'PNG',14,8,42,logoHeight);doc.setFontSize(16);doc.text('RBMI Library',64,17);doc.setFontSize(12);doc.text(title,14,35);doc.setFontSize(9);doc.text('Page '+page+' of '+doc.getNumberOfPages(),195,288,{align:'right'});}
+ for(let page=1;page<=doc.getNumberOfPages();page++){doc.setPage(page);doc.setTextColor(0,0,0);doc.addImage(logo,'PNG',14,8,42,logoHeight);doc.setFontSize(16);doc.text('RBMI Library',64,17);doc.setFontSize(12);doc.text(title,14,35);doc.setFontSize(9);doc.text('Page '+page+' of '+doc.getNumberOfPages(),195,288,{align:'right'});}
  return doc;
 }
 export async function registerPDF(title,lines,columns=[],rows=[],options={}){

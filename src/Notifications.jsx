@@ -1,3 +1,4 @@
+import {fineText} from './fine-amount.jsx';
 import React,{useEffect,useState} from 'react';
 import {rpc} from './api';
 
@@ -9,5 +10,5 @@ export function Notifications({institution,refreshKey}){
   load();const timer=setInterval(load,60000);window.addEventListener('focus',load);
   return()=>{active=false;clearInterval(timer);window.removeEventListener('focus',load);};
  },[institution,refreshKey]);
- return <details className="notification-menu"><summary aria-label={'Notifications: '+alerts.length}>{alerts.length?'● ':''}Notifications ({alerts.length})</summary><section aria-label="Library notifications" className="notification-list"><h2>Notifications</h2><p>For your borrowing account in {institution}. Due-soon reminders start three days before return is due.</p>{error&&<p role="status">{error}</p>}{!error&&!alerts.length&&<p>No current notifications.</p>}{alerts.map(a=><article key={a.id}><strong>{a.title}</strong><p>{a.message}</p></article>)}</section></details>;
+ return <details className="notification-menu"><summary aria-label={'Notifications: '+alerts.length}>{alerts.length?'● ':''}Notifications ({alerts.length})</summary><section aria-label="Library notifications" className="notification-list"><h2>Notifications</h2><p>For your borrowing account in {institution}. Due-soon reminders start three days before return is due.</p>{error&&<p role="status">{error}</p>}{!error&&!alerts.length&&<p>No current notifications.</p>}{alerts.map(a=><article key={a.id}><strong>{a.title}</strong><p>{fineText(a.message,/fine/i.test(a.title))}</p></article>)}</section></details>;
 }

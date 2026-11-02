@@ -29,3 +29,10 @@
 .panel.registers>.section-actions{flex-wrap:wrap;justify-content:flex-start;gap:12px;padding:0 20px}.registers>.section-actions label{display:flex;flex-direction:column;gap:6px}.registers>p,.registers>label{display:block;margin:14px 20px}.registers .table-wrap{overflow-x:auto}.registers small{overflow-wrap:anywhere}.registers .editor-form{padding:20px}
 
 .fine-desk{padding:0 20px 20px;margin-bottom:24px;border:2px solid var(--green)}.fine-desk>.panel-heading{padding-left:0;padding-right:0}.fine-desk .editor-form{max-width:600px;padding:16px 0}
+
+.fine-amount{color:#8b0000!important;font-weight:700;font-variant-numeric:tabular-nums}
+[data-theme="dark"] .fine-amount{color:#8b0000!important;background:#ffe8e8;border-radius:3px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+@media print{.fine-amount{color:#8b0000!important;background:white!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+
+.button .fine-amount{background:#ffe8e8;border-radius:3px;padding:0 3px}
+.editor-form input[name="fine_rate"],.editor-form input[name="fine_cap"],.editor-form input[name="block_balance"]{color:#8b0000!important;background:#fff4f4!important;font-weight:700}
