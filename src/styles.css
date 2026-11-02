@@ -27,3 +27,5 @@
 @media(max-width:760px){.topbar{height:auto;min-height:65px;flex-wrap:wrap;padding-top:12px;padding-bottom:12px}.topbar .top-right{width:100%;flex-wrap:wrap;justify-content:space-between}.topbar #institution{flex:1;min-width:0;max-width:calc(100% - 110px)}}
 
 .panel.registers>.section-actions{flex-wrap:wrap;justify-content:flex-start;gap:12px;padding:0 20px}.registers>.section-actions label{display:flex;flex-direction:column;gap:6px}.registers>p,.registers>label{display:block;margin:14px 20px}.registers .table-wrap{overflow-x:auto}.registers small{overflow-wrap:anywhere}.registers .editor-form{padding:20px}
+
+.fine-desk{padding:0 20px 20px;margin-bottom:24px;border:2px solid var(--green)}.fine-desk>.panel-heading{padding-left:0;padding-right:0}.fine-desk .editor-form{max-width:600px;padding:16px 0}

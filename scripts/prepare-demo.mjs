@@ -11,3 +11,5 @@ await copyFile('supabase/migrations/20261028132148_accession_and_student_lifecyc
 await writeFile('public/demo/upgrades.sql',(await Promise.all(migrations.slice(1).map(x=>readFile('supabase/migrations/'+x,'utf8')))).join('\n'));
 
 await copyFile('supabase/migrations/20261102024955_donation_and_fine_registers.sql','public/demo/registers.sql');
+
+await copyFile('supabase/migrations/20261102034045_pre_return_fines_and_monthly_accounts.sql','public/demo/monthly-fines.sql');
