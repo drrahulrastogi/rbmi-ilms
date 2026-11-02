@@ -43,3 +43,19 @@ test('librarian submission locks the snapshot and backdated collections; account
  await assert.rejects(action('fine_deposit',{payment_ids:oldPaymentIds,deposited_on:day,reference:'DOUBLE',destination:'bank'}),/Receipts/);
 });
 test('monthly access remains library-scoped and inaccessible to borrowers or direct table readers',async()=>{await as(actors.patron);await assert.rejects(statement(),/Access denied/);await as(actors.librarian);await assert.rejects(action('fine_month_verify',{month},'RBCP'),/Access denied/);await db.exec('set role authenticated');try{await assert.rejects(db.query('select * from app.fine_months'),/permission denied/);await assert.rejects(db.query("select app.library_action_pre_monthly('RBCET','return','{}')"),/permission denied/);}finally{await db.exec('reset role');}});
+
+
+test('fine start is the first chargeable day after grace, weekends, holidays and unavailable dates',async()=>{
+ await db.exec('begin');try{
+  const pol={fine_rate:2,fine_cap:500,grace_days:1,exclude_weekends:true};
+  const start=async(p=pol)=>(await db.query("select app.fine_start_date('RBCET','2026-11-06',$1)::text d",[p])).rows[0].d;
+  assert.equal(await start(),'2026-11-10');
+  await db.exec("insert into app.holidays(institution_id,day,name) values('RBCET','2026-11-09','QA holiday') on conflict(institution_id,day) do nothing");
+  await db.exec("insert into app.library_availability(institution_id,day,available,reason) values('RBCET','2026-11-10',false,'QA closed') on conflict(institution_id,day) do update set available=false");
+  assert.equal(await start(),'2026-11-12');
+  assert.equal(await start({...pol,exclude_weekends:false,grace_days:0}),'2026-11-07');
+  assert.equal(await start({...pol,fine_rate:0}),null);assert.equal(await start({...pol,fine_cap:0}),null);
+  const d=await start();assert.equal(Number((await db.query("select app.fine_for('RBCET','2026-11-06',$1::date-1,$2) f",[d,pol])).rows[0].f),0);
+  assert.equal(Number((await db.query("select app.fine_for('RBCET','2026-11-06',$1::date,$2) f",[d,pol])).rows[0].f),2);
+ }finally{await db.exec('rollback');}
+});

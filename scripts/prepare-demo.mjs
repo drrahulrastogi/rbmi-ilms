@@ -13,3 +13,5 @@ await writeFile('public/demo/upgrades.sql',(await Promise.all(migrations.slice(1
 await copyFile('supabase/migrations/20261102024955_donation_and_fine_registers.sql','public/demo/registers.sql');
 
 await copyFile('supabase/migrations/20261102034045_pre_return_fines_and_monthly_accounts.sql','public/demo/monthly-fines.sql');
+
+await copyFile('supabase/migrations/20261102080311_fine_start_date_column.sql','public/demo/fine-start.sql');
