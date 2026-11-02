@@ -2,3 +2,5 @@ android/
 test-results/
 .env*
 !.env.example
+
+dist/
