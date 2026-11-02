@@ -15,3 +15,5 @@ await copyFile('supabase/migrations/20261102024955_donation_and_fine_registers.s
 await copyFile('supabase/migrations/20261102034045_pre_return_fines_and_monthly_accounts.sql','public/demo/monthly-fines.sql');
 
 await copyFile('supabase/migrations/20261102080311_fine_start_date_column.sql','public/demo/fine-start.sql');
+
+await copyFile('supabase/migrations/20261102084456_named_numbered_slips.sql','public/demo/named-slips.sql');

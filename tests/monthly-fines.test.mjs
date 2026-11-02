@@ -59,3 +59,26 @@ test('fine start is the first chargeable day after grace, weekends, holidays and
   assert.equal(Number((await db.query("select app.fine_for('RBCET','2026-11-06',$1::date,$2) f",[d,pol])).rows[0].f),2);
  }finally{await db.exec('rollback');}
 });
+
+
+test('slips use stored staff names, permanent unique numbers and safe list-print access',async()=>{
+ await as(actors.librarian);await db.exec("alter table auth.users add column if not exists raw_user_meta_data jsonb");
+ await db.query("update app.library_staff set display_name='QA Library Collector' where institution_id='RBCET' and user_id=$1",[actors.librarian]);
+ const title=(await action('title',{title:'QA slip book',author:'QA slip author'})).id;
+ await action('copy',{title_id:title,accession:'QA-SLIP-COPY',barcode:'QA-SLIP-COPY',institute:'RBCET'});
+ const patron=(await db.query("select code from app.patrons where institution_id='RBCET' and category='faculty' limit 1")).rows[0];
+ const loan=await action('issue',{library_code:'RBCET',barcode:'QA-SLIP-COPY',patron_code:patron.code});
+ assert.match(loan.issue_slip_no,/^RBCET-ISS-\d{4}-\d{6,}$/);assert.equal(loan.issued_by_name,'QA Library Collector');
+ await db.query("update app.loans set due=app.today()-2,policy=policy||'{\"fine_rate\":2,\"grace_days\":0,\"exclude_weekends\":false}'::jsonb where id=$1",[loan.id]);
+ const amount=Number((await quote(loan.id)).balance);const payment=await collect(loan.id,amount);
+ let p=(await db.query("select public.library_register_page('RBCET','collections',null,null,$1,null,1) d",[payment.id])).rows[0].d.rows[0];
+ assert.equal(p.actor_name,'QA Library Collector');assert.match(p.slip_no,/^RBCET-F-\d{4}-\d{6,}$/);assert.equal(p.receipt,p.slip_no);
+ await action('return',{id:loan.id});const returned=(await db.query('select * from app.loans where id=$1',[loan.id])).rows[0];assert.match(returned.return_slip_no,/^RBCET-RET-/);assert.equal(returned.returned_by_name,'QA Library Collector');assert.notEqual(returned.issue_slip_no,returned.return_slip_no);
+ await db.query("update app.library_staff set display_name='Changed later' where user_id=$1",[actors.librarian]);await db.query("update app.payments set reason='QA reprint' where id=$1",[p.id]);
+ const reprint=(await db.query('select * from app.payments where id=$1',[p.id])).rows[0];assert.equal(reprint.actor_name,p.actor_name);assert.equal(reprint.slip_no,p.slip_no);
+ const key=randomUUID();const print=async()=> (await db.query("select public.library_print_slip('RBCET','collections','{}',$1) d",[key])).rows[0].d;
+ const list=await print();assert.match(list.slip_no,/^RBCET-LIST-/);assert.equal(list.actor_name,'Changed later');assert.equal((await print()).slip_no,list.slip_no);
+ const monthReport=await statement();assert.ok(monthReport.slip_no);assert.ok(monthReport.submitted_by_name);assert.ok(monthReport.verified_by_name);assert.ok(monthReport.rows.every(r=>r.slip_no&&!r.receipt.startsWith('F-')));
+ await as(actors.patron);await assert.rejects(print(),/Access denied/);
+ await db.exec('set role authenticated');try{await assert.rejects(db.query('select * from app.print_slips'),/permission denied/);await assert.rejects(db.query("select app.new_slip_number('RBCET','F',current_date)"),/permission denied/);}finally{await db.exec('reset role');}
+});

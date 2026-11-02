@@ -5,19 +5,19 @@ export async function registerPDF(title,lines,columns=[],rows=[]){
  if(columns.length)autoTable(doc,{startY:y,head:[columns],body:rows,styles:{fontSize:9},margin:{bottom:20}});
  doc.save(title.replace(/[^a-z0-9-]/gi,'-')+'.pdf');
 }
-export const receiptNumber=r=>'F-'+r.id;
+export const receiptNumber=r=>r.slip_no||'Slip number unavailable';
 export function paymentReceipt(row,library){return registerPDF('Fine payment receipt',[
- 'Library: '+library,'Receipt: '+receiptNumber(row),'Collection date: '+row.collected_on,
+ 'Library: '+library,'Slip number: '+receiptNumber(row),'Collection date: '+row.collected_on,
  'Borrower: '+row.patron_name+' ('+row.patron_code+')','Amount received: INR '+Number(row.amount).toFixed(2),
- 'Payment method: '+row.payment_method,'Reference: '+row.reason,'Recorded by: '+(row.actor||'Not recorded'),
+ 'Payment method: '+row.payment_method,'Reference: '+row.reason,'Recorded by: '+(row.actor_name||'Name not recorded'),
  'This receipt confirms collection from the borrower. Institutional deposit is recorded separately.'
 ]);}
 export function donationAcknowledgement(row,library){return registerPDF('Donation acknowledgement',[
- 'Library: '+library+' / Institute: '+row.institute,'Reference: DON-'+row.id,'Date received: '+row.received_at,
+ 'Library: '+library+' / Institute: '+row.institute,'Slip number: '+receiptNumber(row),'Date received: '+row.received_at,
  'To: '+row.donor_name,...(row.donor_contact?[row.donor_contact]:[]),
  'Thank you for your generous donation of '+row.quantity+' book(s) to our library. Your support helps our students and faculty learn and discover.',
  'Title: '+row.title,'Estimated collection value: INR '+(row.quantity*row.unit_price).toFixed(2),
  'The books have been entered in our catalogue and are available through our normal library services.',
- 'With thanks,','Librarian, '+library,'Signature / stamp: __________________',
+ 'Recorded by: '+(row.recorded_by_name||'Name not recorded'),'With thanks,','Librarian, '+library,'Signature / stamp: __________________',
  'Acknowledgement of books received; this is not a tax exemption certificate.'
 ]);}

@@ -10,7 +10,7 @@ export function LoanFineDesk({institution,loanId,canCollect,canReturn,onChanged,
  async function collect(e){e.preventDefault();setBusy(true);setError('');try{
   const p={...Object.fromEntries(new FormData(e.currentTarget)),id:loanId,request_key:key};
   const r=await rpc('library_action',{i:institution,action:'collect_loan_fine',p});
-  setReceipt({id:r.id,amount:Number(r.amount),payment_method:p.payment_method,reason:p.reason,collected_on:r.collected_on,patron_name:quote.patron_name,patron_code:quote.patron_code,actor:r.actor});
+  const receiptPage=await rpc('library_register_page',{i:institution,kind:'collections',from_day:null,to_day:null,q:r.id,after_id:null,page_size:1});setReceipt(receiptPage.rows[0]||null);
   setKey(crypto.randomUUID());await refresh();await onChanged?.();
  }catch(e){setError(e.message);}finally{setBusy(false);}}
  async function returnBook(){setBusy(true);setError('');try{await rpc('library_action',{i:institution,action:'return',p:{id:loanId,library_code:institution}});await refresh();await onChanged?.();}catch(e){setError(e.message);await refresh().catch(()=>{});}finally{setBusy(false);}}
