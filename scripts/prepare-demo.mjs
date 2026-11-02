@@ -19,3 +19,5 @@ await copyFile('supabase/migrations/20261102080311_fine_start_date_column.sql','
 await copyFile('supabase/migrations/20261102084456_named_numbered_slips.sql','public/demo/named-slips.sql');
 
 await copyFile('supabase/migrations/20261102091740_borrower_payment_receipts.sql','public/demo/borrower-receipts.sql');
+
+await copyFile('supabase/migrations/20261102124927_donor_acknowledgements_full_fine.sql','public/demo/donor-full-fine.sql');

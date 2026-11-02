@@ -21,16 +21,24 @@ test('fine appears before return without posting a charge, and borrower sees onl
  await as(actors.patron);assert.equal((await quote(loans[0].id)).patron_id,loans[0].patron_id);assert.equal(Number((await db.query("select public.library_workspace('RBCET') d")).rows[0].d.counts.fine_balance),6);await assert.rejects(quote(loans[1].id),/Access denied/);await as(actors.librarian);
  const circulation=(await db.query("select public.library_circulation_page('RBCET',null,100,'',null,null,'issued','active') d")).rows[0].d;assert.equal(Number(circulation.rows.find(l=>l.id===loans[0].id)._fine_balance),6);
 });
-test('unpaid and partially paid fines block return; only the librarian collects, with retry-safe receipts',async()=>{await assert.rejects(action('return',{id:loans[0].id,amount:0}),/Collect the outstanding fine/);const key=randomUUID(),receipt=await collect(loans[0].id,2,key);assert.equal((await collect(loans[0].id,2,key)).id,receipt.id);assert.equal(receipt.collected_on,day);assert.equal(receipt.actor,actors.librarian);assert.equal(Number((await quote(loans[0].id)).balance),4);await assert.rejects(action('return',{id:loans[0].id}),/Collect the outstanding fine/);
- await as(actors.accountant);await assert.rejects(collect(loans[0].id,4),/Access denied/);await as(actors.librarian);const q=await quote(loans[0].id);await assert.rejects(action('waive',{id:q.fine_id,amount:4,reason:'bypass'}),/cannot be waived/);await collect(loans[0].id,4);await action('return',{id:loans[0].id,library_code:'RBCET'});
- assert.equal(Number((await quote(loans[0].id)).balance),0);assert.equal((await db.query('select count(*) n from app.fines where loan_id=$1',[loans[0].id])).rows[0].n,1);const l=(await db.query('select * from app.loans where id=$1',[loans[0].id])).rows[0];assert.ok(l.returned&&l.returned_at&&l.returned_by);await assert.rejects(action('return',{id:l.id}),/already returned/);
+test('full automatic fine collection rejects partial edits and keeps retry-safe receipts',async()=>{
+ await assert.rejects(action('return',{id:loans[0].id,amount:0}),/Collect the outstanding fine/);
+ await assert.rejects(collect(loans[0].id,2),/full system-calculated fine/);
+ await assert.rejects(collect(loans[0].id,6.01),/full system-calculated fine/);
+ await as(actors.accountant);await assert.rejects(collect(loans[0].id,6),/Access denied/);await as(actors.librarian);
+ const key=randomUUID(),receipt=await action('collect_loan_fine',{id:loans[0].id,request_key:key,payment_method:'cash',reason:'Full automatic fine'});
+ assert.equal(Number(receipt.amount),6);assert.equal((await collect(loans[0].id,6,key)).id,receipt.id);assert.equal(receipt.collected_on,day);assert.equal(receipt.actor,actors.librarian);
+ await action('return',{id:loans[0].id,library_code:'RBCET'});assert.equal(Number((await quote(loans[0].id)).balance),0);
+ const l=(await db.query('select * from app.loans where id=$1',[loans[0].id])).rows[0];assert.ok(l.returned&&l.returned_at&&l.returned_by);await assert.rejects(action('return',{id:l.id}),/already returned/);
 });
+
 test('a new overdue day after collection requires the additional fine; no duplicate final assessment',async()=>{const id=loans[1].id;await db.query("update app.loans set due=app.today()-2,policy=policy||'{\"fine_rate\":2,\"grace_days\":1,\"exclude_weekends\":false}'::jsonb where id=$1",[id]);const q=await quote(id);await collect(id,Number(q.balance));
  const tomorrow=(await db.query('select (app.today()+1)::text d')).rows[0].d;await db.exec("create or replace function app.today() returns date language sql stable as $$select '"+tomorrow+"'::date$$");
  try{assert.equal(Number((await quote(id)).balance),2);await assert.rejects(action('return',{id}),/Collect the outstanding fine/);await collect(id,2);await action('return',{id});assert.equal(Number((await quote(id)).balance),0);}finally{await db.exec(todayDefinition);}
 });
 test('monthly report uses collection dates, includes every receipt, and rejects early submission/deposit',async()=>{const loan=loans[2];await db.query('update app.loans set returned=app.today() where id=$1',[loan.id]);const f=(await db.query("insert into app.fines(institution_id,patron_id,loan_id,amount) values('RBCET',$1,$2,50) returning id",[loan.patron_id,loan.id])).rows[0].id;
- for(const amount of [20,30]){const r=await action('pay',{id:f,amount,payment_method:'cash',collected_on:month,request_key:randomUUID(),reason:'QA previous-month cash'});oldPaymentIds.push(r.id);}
+ // Historical partial receipts remain reportable; new desk payments require full balance.
+ for(const amount of [20,30]){const r=(await db.query("insert into app.payments(institution_id,fine_id,kind,amount,reason,actor,payment_method,collected_on) values('RBCET',$1,'payment',$2,'Historic partial receipt',$3,'cash',$4) returning id",[f,amount,actors.librarian,month])).rows[0];oldPaymentIds.push(r.id);}await db.query('update app.fines set paid=50 where id=$1',[f]);
  let r=await statement(0,1);assert.equal(r.count,2);assert.equal(Number(r.total),50);assert.equal(r.rows.length,1);assert.equal(r.next_start,1);assert.equal((await statement(1,1)).next_start,null);
  const first=(await db.query("select date_trunc('month',app.today())::date::text d")).rows[0].d;
  if(day!==first.slice(0,8)+new Date(Number(first.slice(0,4)),Number(first.slice(5,7)),0).getDate())await assert.rejects(action('fine_month_submit',{month:first}),/month-end/);
@@ -87,8 +95,8 @@ test('slips use stored staff names, permanent unique numbers and safe list-print
 test('borrower downloads only their own paid receipts with original names and slip numbers',async()=>{
  await as(actors.patron);
  const receipts=async(cursor=null,size=100,i='RBCET')=>(await db.query('select public.library_my_receipts($1,$2,$3) d',[i,cursor,size])).rows[0].d;
- const first=await receipts(null,1);assert.equal(first.total,2);assert.equal(first.rows.length,1);assert.ok(first.next_id);
- const second=await receipts(first.next_id,1);assert.equal(second.rows.length,1);assert.notEqual(first.rows[0].id,second.rows[0].id);
+ const first=await receipts(null,1);assert.equal(first.total,1);assert.equal(first.rows.length,1);assert.ok(first.next_id);
+ assert.equal((await receipts(first.rows[0].id,1)).rows.length,0);
  const ownFine=(await db.query('select id from app.fines where loan_id=$1',[loans[0].id])).rows[0].id;
  const ownPayments=(await db.query('select * from app.payments where fine_id=$1 order by id',[ownFine])).rows;
  assert.deepEqual((await receipts()).rows.map(r=>r.id),ownPayments.map(r=>r.id));
@@ -102,4 +110,18 @@ test('borrower downloads only their own paid receipts with original names and sl
  await db.query('update app.memberships set patron_id=$1 where user_id=$2 and institution_id=$3',[ownId,actors.patron,'RBCET']);
  await as(actors.librarian);await assert.rejects(receipts(),/Access denied/);
  await db.exec('set role anon');try{await assert.rejects(receipts(),/permission denied/);}finally{await db.exec('reset role');}
+});
+
+
+test('fractional fine rounds up to whole rupees and cannot be underpaid via direct pay',async()=>{
+ await as(actors.librarian);await db.exec('begin');try{
+ const l=(await db.query("select * from app.loans where institution_id='RBCET' and returned is null limit 1")).rows[0];
+ await db.query("delete from app.fines where loan_id=$1",[l.id]);
+ await db.query("update app.loans set due=app.today()-1,policy=policy||'{\"fine_rate\":2.5,\"grace_days\":0,\"exclude_weekends\":false}'::jsonb where id=$1",[l.id]);
+ assert.equal(Number((await quote(l.id)).balance),3);
+ const f=(await db.query("insert into app.fines(institution_id,patron_id,loan_id,amount) values('RBCET',$1,$2,2.5) returning id",[l.patron_id,l.id])).rows[0];
+ await db.exec('savepoint rejected_payment');await assert.rejects(action('pay',{id:f.id,amount:2.5,payment_method:'cash',reason:'edited'}),/full system-calculated/);await db.exec('rollback to savepoint rejected_payment');
+ const r=await action('pay',{id:f.id,payment_method:'cash',reason:'Automatic whole rupees',request_key:randomUUID()});
+ assert.equal(Number((await db.query('select amount from app.payments where id=$1',[r.id])).rows[0].amount),3);assert.equal(Number((await quote(l.id)).balance),0);
+ }finally{await db.exec('rollback');}
 });
