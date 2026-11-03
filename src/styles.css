@@ -42,3 +42,9 @@
 .editor-form .permission-grid label{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:8px}.editor-form textarea{font:inherit;color:inherit;background:transparent;width:100%;min-height:90px;resize:vertical;padding:12px;border:1px solid var(--border);border-radius:7px}.editor-form textarea:focus{outline:2px solid #75aa96;outline-offset:1px}
 
 .issue-summary dl{display:grid;grid-template-columns:minmax(130px,1fr) minmax(0,2fr);gap:12px;margin:20px 0}.issue-summary dt{font-weight:600;color:var(--muted)}.issue-summary dd{margin:0;overflow-wrap:anywhere}.issue-summary>.button{margin-top:20px}
+
+/* Shared credit on public, sign-in and authenticated pages. */
+.developer-credit{padding:16px 20px;min-height:50px;text-align:center;font-size:12px;line-height:1.5;color:inherit;border-top:1px solid var(--border);overflow-wrap:anywhere}.app,.login{min-height:calc(100dvh - 50px)}
+@media(min-width:851px){.app+.developer-credit{margin-left:245px}}
+@media(min-width:851px) and (max-width:1150px){.app+.developer-credit{margin-left:210px}}
+@media print{.developer-credit{display:none}}
