@@ -50,6 +50,13 @@ test('circulation filters use the requested date, preserve pagination and enforc
  const first=await page({q:'faculty reminder',page_size:2,date_field:'due',from_day:due,to_day:due});assert.equal(first.total,3);assert.equal(first.rows.length,2);assert.ok(first.next_id);
  const next=await page({q:'FACULTY REMINDER',page_size:2,date_field:'due',from_day:due,to_day:due,after_id:first.next_id});assert.equal(next.rows.length,1);assert.equal(new Set([...first.rows,...next.rows].map(r=>r.id)).size,3);
  assert.ok(first.rows.every(r=>r._patron_name===borrower.name&&r._accession));
+ assert.ok(first.rows.every(r=>!r.returned),'unreturned loans must fill the first page');
+ assert.ok(next.rows.every(r=>r.returned),'returned loans must follow all unreturned loans');
+ const singlePages=[];let cursor=null;
+ do{const p=await page({q:borrower.name,page_size:1,after_id:cursor});singlePages.push(...p.rows);cursor=p.next_id;}while(cursor);
+ assert.equal(singlePages.length,3);assert.equal(new Set(singlePages.map(r=>r.id)).size,3);
+ assert.deepEqual(singlePages.map(r=>Boolean(r.returned)),[false,false,true]);
+
  assert.equal((await page({q:borrower.name,loan_status:'returned'})).total,1);
  assert.equal((await page({q:borrower.name,loan_status:'active'})).total,2);
  assert.equal((await page({q:borrower.name,date_field:'due',from_day:'2040-01-01',to_day:'2040-01-01'})).total,0);
