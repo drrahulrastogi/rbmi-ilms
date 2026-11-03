@@ -41,7 +41,7 @@ test('bulk holiday calendar is atomic, rejects invalid rows and preserves existi
  await assert.rejects(action('holiday',{day:'2040-01-04',name:''},'RBGN'),/holiday name/);
 }finally{await db.exec('rollback');}});
 
-test('holiday uploads and additional days require admin even when called directly',async()=>{await as();for(const id of [actors.librarian,actors.assistant,actors.accountant,actors.auditor,actors.patron]){await as(id);await assert.rejects(action('holiday_import',{rows:[{day:'2040-02-01',name:'Not authorized'}]}),/Access denied/);await assert.rejects(action('holiday',{day:'2040-02-01',name:'Not authorized'}),/Access denied/);}await as();});
+test('holiday uploads and additional days reject other roles even when called directly',async()=>{await as();for(const id of [actors.assistant,actors.accountant,actors.auditor,actors.patron]){await as(id);await assert.rejects(action('holiday_import',{rows:[{day:'2040-02-01',name:'Not authorized'}]}),/Access denied/);await assert.rejects(action('holiday',{day:'2040-02-01',name:'Not authorized'}),/Access denied/);}await as();});
 
 test('bulk and additional holidays exclude fine days only in their own library and move due dates',async()=>{await as();await db.exec('begin');try{
  const pol={fine_cap:100,fine_rate:10,grace_days:0,exclude_weekends:false};
@@ -87,3 +87,16 @@ test('imported login links only a matching active patron and forces first passwo
 }finally{await db.exec('rollback');await as();}});
 
 test('browser roles cannot bind imported accounts or complete the required change themselves',async()=>{await as();await db.exec('set role authenticated');try{await assert.rejects(db.query('select public.library_complete_first_login($1)',[actors.admin]),/permission denied/);await assert.rejects(db.query('select public.library_bind_imported_login($1,$2,$3,$4)',['RBCET',actors.admin,actors.admin,actors.admin]),/permission denied/);}finally{await db.exec('reset role');}await as(actors.assistant);await assert.rejects(db.query('select public.library_login_targets($1,$2)',['RBCET',['RBCET-S001']]),/Access denied/);await as();});
+
+test('librarian manages only assigned library holidays with audit and validated rows',async()=>{
+ await as(actors.librarian);await db.exec('begin');try{
+  assert.equal((await action('holiday',{day:'2041-02-01',name:'Library closure'})).imported,1);
+  assert.equal((await action('holiday_import',{rows:[{day:'2041-02-02',name:'Annual event'}]})).imported,1);
+  assert.equal((await db.query("select count(*) n from app.holidays where institution_id='RBCET' and day between '2041-02-01' and '2041-02-02'")).rows[0].n,2);
+  assert.equal((await db.query("select count(*) n from app.audit where actor=$1 and action='holiday_import' and details->'rows'->0->>'day' like '2041-02-%'",[actors.librarian])).rows[0].n,2);
+  for(const i of ['RBCP','RBCN','RBGN']){
+   await db.exec('savepoint denied');await assert.rejects(action('holiday',{day:'2041-02-03',name:'Other library'},i),/Access denied/);await db.exec('rollback to savepoint denied');
+  }
+  await db.exec('savepoint invalid');await assert.rejects(action('holiday',{day:'2041-02-03',name:''}),/holiday name/);await db.exec('rollback to savepoint invalid');
+ }finally{await db.exec('rollback');await as();}
+});

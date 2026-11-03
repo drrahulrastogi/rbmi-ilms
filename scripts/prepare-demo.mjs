@@ -31,3 +31,5 @@ await copyFile('supabase/migrations/20261103001732_admin_edit_book_copies.sql','
 await copyFile('supabase/migrations/20261103002206_book_edit_approval_workflow.sql','public/demo/book-approval.sql');
 
 await copyFile('supabase/migrations/20261103003338_book_edit_decision_refresh.sql','public/demo/book-edit-refresh.sql');
+
+await copyFile('supabase/migrations/20261103100143_librarian_holiday_management.sql','public/demo/librarian-holidays.sql');
