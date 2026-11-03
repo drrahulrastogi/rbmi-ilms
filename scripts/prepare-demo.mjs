@@ -25,3 +25,5 @@ await copyFile('supabase/migrations/20261102124927_donor_acknowledgements_full_f
 await copyFile('supabase/migrations/20261102142307_disable_fine_waivers.sql','public/demo/no-waivers.sql');
 
 await copyFile('supabase/migrations/20261102162113_accountant_fine_workspace.sql','public/demo/accountant-fines.sql');
+
+await copyFile('supabase/migrations/20261103001732_admin_edit_book_copies.sql','public/demo/copy-edit.sql');

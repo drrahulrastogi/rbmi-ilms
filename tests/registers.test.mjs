@@ -49,3 +49,17 @@ test('payments PDF includes receipt numbers, collector names, dates and total',a
  const d=paymentsDocument([{slip_no:'RBCET-F-2026-000001',patron_name:'QA Student',patron_code:'123',amount:6,actor_name:'QA Librarian',reason:'Cash fine',collected_on:'2026-11-02'}],'RBCET',{slip_no:'RBCET-LIST-2026-000002',actor_name:'QA Librarian'});
  assert.equal(d.title,'Payments');assert.ok(d.lines.includes('Total collected: INR 6.00'));assert.deepEqual(d.rows[0],['RBCET-F-2026-000001','QA Student / 123','6.00','QA Librarian','Cash fine','2026-11-02']);
 });
+
+
+test('admin edits donated and ordinary copies while preserving provenance and loan identity',async()=>{
+ await as(actors.admin);
+ const copies=(await db.query("select * from app.copies where institution_id='RBCET' order by acquisition_id nulls last limit 2")).rows;
+ for(const [n,c] of copies.entries()){
+ const payload={id:c.id,accession:'ADMIN-CORRECTED-'+n,barcode:'ADMIN-BARCODE-'+n,institute:c.institute||'RBCET',accessioned_on:day,shelf:'Corrected shelf',price:42,reason:'Correct Excel or librarian entry'};
+ await action('copy_edit',payload);const edited=(await db.query('select * from app.copies where id=$1',[c.id])).rows[0];assert.equal(edited.accession,payload.accession);assert.equal(edited.acquisition_id,c.acquisition_id);assert.equal(edited.title_id,c.title_id);assert.equal(edited.status,c.status);
+ const audit=(await db.query("select details from app.audit where action='copy_edit' and details->>'copy_id'=$1 order by id desc limit 1",[c.id])).rows[0].details;assert.equal(audit.before.accession,c.accession);assert.equal(audit.after.accession,payload.accession);
+ await as(actors.librarian);await assert.rejects(action('copy_edit',payload),/Access denied/);await as(actors.accountant);await assert.rejects(action('copy_edit',payload),/Access denied/);await as(actors.admin);
+ await assert.rejects(action('copy_edit',{...payload,reason:''}),/reason is required/);
+ await assert.rejects(action('copy_edit',payload,'RBCP'),/not found/);
+ }
+});
