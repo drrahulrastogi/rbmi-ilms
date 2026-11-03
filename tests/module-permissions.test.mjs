@@ -29,7 +29,7 @@ test('only admin assigns permissions; administrator cannot be locked out or role
  await as(actors.librarian);await denied(()=>save(actors.assistant,[]));await denied(()=>rpc('library_permissions',['RBCET']));
  await as(actors.admin);await denied(()=>save(actors.admin,[]),/Administrator permissions cannot be revoked/);
  await denied(()=>save(actors.accountant,['Catalogue']),/unavailable for this role/);
- await denied(()=>save(actors.patron,['Settings']),/unavailable for this role/);
+ await denied(()=>save(actors.patron,['Settings']),/Student accounts are excluded/);
  await denied(()=>save(actors.assistant,['Permissions']),/unavailable for this role/);
  await denied(()=>save(actors.assistant,['Not a module']),/invalid/);
  await denied(()=>save(actors.assistant,[],0,'RBCET',' '),/reason/);
@@ -78,4 +78,13 @@ test('fine and catalogue revocation does not break permitted circulation depende
  const p=await rpc('library_circulation_page',['RBCET']);assert.ok(p.rows.length);assert.ok(await rpc('library_fine_quote',['RBCET',p.rows[0].id]));
  await denied(()=>action('collect_loan_fine',{}));await denied(()=>action('book',{title:'Denied',accession:'NO'}));
  await denied(()=>rpc('library_records_page',['RBCET','audit']));await denied(()=>action('book_edit_request',{}));
+});
+
+test('student accounts are excluded from listing and direct edits; faculty and Accounts remain assignable',async()=>{
+ const listed=await rpc('library_permissions',['RBCET','',null,100]);assert.ok(!listed.rows.some(u=>u.id===actors.patron));
+ assert.ok(listed.rows.some(u=>u.id===actors.librarian));assert.ok(listed.rows.some(u=>u.id===actors.accountant));
+ await denied(()=>save(actors.patron,[]),/Student accounts are excluded/);
+ await db.query("update app.patrons set category='faculty' where id=(select patron_id from app.memberships where institution_id='RBCET' and user_id=$1)",[actors.patron]);
+ const faculty=await rpc('library_permissions',['RBCET','',null,100]);assert.ok(faculty.rows.some(u=>u.id===actors.patron));
+ assert.deepEqual((await save(actors.patron,['Catalogue'])).modules,['Catalogue']);
 });
