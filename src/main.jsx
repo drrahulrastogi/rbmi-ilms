@@ -53,6 +53,7 @@ function App(){
  const activeUserRef=useRef(null);activeUserRef.current=signingOut?null:demo?'demo':session?.user?.id||null;
  const membership=(demo||membersOwnerId===session?.user?.id)?members.find(m=>m.institution_id===institution):undefined,role=(membership?.role||'').trim().toLowerCase(),admin=role==='admin',accountant=role==='accountant',manage=['admin','librarian'].includes(role),circ=['admin','librarian','assistant'].includes(role),finance=['admin','librarian','accountant'].includes(role),staff=['admin','librarian','assistant','accountant','auditor'].includes(role),patron=!staff;
  useEffect(()=>{if(accountant){setPage('Fines');setDrawer(null);setImporter(null);}},[accountant,institution]);
+ useEffect(()=>{if(role!=='librarian')return;let live=true,previous=null;async function check(){if(document.visibilityState==='hidden')return;try{const revision=await rpc('library_book_edit_revision',{i:institution}),next=JSON.stringify(revision);if(!live)return;if(previous!==null&&previous!==next){await load(institution);if(live)setNotice('An administrator reviewed a book edit. See Book edits for the decision and message.');}previous=next;}catch{}}check();const timer=setInterval(check,15000);window.addEventListener('focus',check);return()=>{live=false;clearInterval(timer);window.removeEventListener('focus',check);};},[role,institution]);
  async function boot(){
   const owner=activeUserRef.current,token=activeTokenRef.current,current=()=>isCurrentSession(owner,token,activeUserRef.current,activeTokenRef.current);
   setLoading(true);setError('');
