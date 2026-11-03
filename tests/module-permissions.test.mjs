@@ -28,7 +28,7 @@ test('defaults retain existing roles; search and paginated user lists disclose n
 test('only admin assigns permissions; administrator cannot be locked out or roles elevated',async()=>{
  await as(actors.librarian);await denied(()=>save(actors.assistant,[]));await denied(()=>rpc('library_permissions',['RBCET']));
  await as(actors.admin);await denied(()=>save(actors.admin,[]),/Administrator permissions cannot be revoked/);
- await denied(()=>save(actors.accountant,['Catalogue']),/unavailable for this role/);
+ await denied(()=>save(actors.accountant,['Permissions']),/unavailable for this role/);
  await denied(()=>save(actors.patron,['Settings']),/Student accounts are excluded/);
  await denied(()=>save(actors.assistant,['Permissions']),/unavailable for this role/);
  await denied(()=>save(actors.assistant,['Not a module']),/invalid/);
@@ -87,4 +87,20 @@ test('student accounts are excluded from listing and direct edits; faculty and A
  await db.query("update app.patrons set category='faculty' where id=(select patron_id from app.memberships where institution_id='RBCET' and user_id=$1)",[actors.patron]);
  const faculty=await rpc('library_permissions',['RBCET','',null,100]);assert.ok(faculty.rows.some(u=>u.id===actors.patron));
  assert.deepEqual((await save(actors.patron,['Catalogue'])).modules,['Catalogue']);
+});
+
+test('full module lists include unchecked options for accountant and faculty; saved assignments work and revoke',async()=>{
+ const accounts=await rpc('library_permissions',['RBCET','',null,100]);const accountant=accounts.rows.find(u=>u.id===actors.accountant);
+ assert.equal(accountant.eligible.length,16);assert.equal(accountant.all_modules.length,17);assert.deepEqual(accountant.modules,['Fines']);assert.deepEqual(accountant.defaults,['Fines']);
+ await save(actors.accountant,['Fines','Catalogue','Circulation','Reports','Book edits']);await as(actors.accountant);
+ let w=await rpc('library_workspace',['RBCET']);assert.ok(!w.accountant_only);assert.ok(w.module_permissions.modules.includes('Catalogue'));
+ assert.ok((await rpc('library_collection_page',['RBCET','titles'])).rows.length);assert.ok((await rpc('library_circulation_page',['RBCET'])).rows.length);assert.ok(await rpc('library_book_edits',['RBCET']));
+ await denied(()=>action('title',{title:'No role elevation',author:'QA'}),/limited to fine verification/);
+ await denied(()=>action('collect_loan_fine',{}),/limited to fine verification/);
+ await as(actors.admin);await save(actors.accountant,null,1);await as(actors.accountant);w=await rpc('library_workspace',['RBCET']);assert.equal(w.accountant_only,true);await denied(()=>rpc('library_circulation_page',['RBCET']));
+ await as(actors.admin);await db.query("update app.patrons set category='faculty' where id=(select patron_id from app.memberships where institution_id='RBCET' and user_id=$1)",[actors.patron]);
+ const faculty=(await rpc('library_permissions',['RBCET','',null,100])).rows.find(u=>u.id===actors.patron);assert.equal(faculty.eligible.length,16);
+ await save(actors.patron,['Catalogue','Patrons','Circulation','Book edits']);await as(actors.patron);
+ assert.ok((await rpc('library_records_page',['RBCET','patrons'])).rows.length>1);assert.ok((await rpc('library_circulation_page',['RBCET'])).rows.length>1);assert.ok(await rpc('library_book_edits',['RBCET']));
+ await denied(()=>action('book_edit_approve',{}));
 });

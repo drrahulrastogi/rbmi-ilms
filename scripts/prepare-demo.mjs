@@ -37,3 +37,5 @@ await copyFile('supabase/migrations/20261103100143_librarian_holiday_management.
 await copyFile('supabase/migrations/20261103101309_user_module_permissions.sql','public/demo/module-permissions.sql');
 
 await copyFile('supabase/migrations/20261103124912_non_student_module_permissions.sql','public/demo/non-student-permissions.sql');
+
+await copyFile('supabase/migrations/20261103130847_full_module_assignment.sql','public/demo/full-module-assignment.sql');
