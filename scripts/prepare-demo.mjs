@@ -27,3 +27,5 @@ await copyFile('supabase/migrations/20261102142307_disable_fine_waivers.sql','pu
 await copyFile('supabase/migrations/20261102162113_accountant_fine_workspace.sql','public/demo/accountant-fines.sql');
 
 await copyFile('supabase/migrations/20261103001732_admin_edit_book_copies.sql','public/demo/copy-edit.sql');
+
+await copyFile('supabase/migrations/20261103002206_book_edit_approval_workflow.sql','public/demo/book-approval.sql');

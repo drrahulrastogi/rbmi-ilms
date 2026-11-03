@@ -67,20 +67,16 @@ test('students cannot reassign copy ownership or create copies',async()=>{
   await assert.rejects(db.query("update app.copies set institute='RBMI' where id=$1",[copies[1]]),/permission denied/);
  }finally{await db.exec('reset role');await as('admin');}
 });
-test('librarian may reassign copies in shared library with an audit, never a foreign library',async()=>{
- await as('librarian');await db.exec('set role authenticated');
- try{
-  await action('copy_institute',{id:copies[1],institute:' rbmi '});
-  const foreign=(await db.query("select public.library_collection_page('RBCET','copies',null,5000) d")).rows[0].d.rows.find(c=>c.id===copies[1]);
-  assert.equal(foreign.institute,'RBMI');
-  await assert.rejects(action('copy_institute',{id:copies[1],institute:'RBCP'}),/Institute must belong/);
- }finally{await db.exec('reset role');await as('admin');}
- const audit=(await db.query("select details from app.audit where action='copy_institute' order by id desc limit 1")).rows[0].details;
- assert.equal(audit.before,'RBTTI');assert.equal(audit.institute,'RBMI');
- const foreign=(await db.query("select id from app.copies where institution_id='RBCP' limit 1")).rows[0].id;
- await assert.rejects(action('copy_institute',{id:foreign,institute:'RBCET'}),/Copy not found/);
+test('librarian requires approval; admin may reassign copies with an audit',async()=>{
+ await as('librarian');await assert.rejects(action('copy_institute',{id:copies[1],institute:' rbmi '}),/Only admin-approved/);
+ await as('admin');await action('copy_institute',{id:copies[1],institute:' rbmi '});
+ const edited=(await db.query('select institute from app.copies where id=$1',[copies[1]])).rows[0];assert.equal(edited.institute,'RBMI');
+ await assert.rejects(action('copy_institute',{id:copies[1],institute:'RBCP'}),/Institute must belong/);
+ const audit=(await db.query("select details from app.audit where action='copy_institute' order by id desc limit 1")).rows[0].details;assert.equal(audit.before,'RBTTI');assert.equal(audit.institute,'RBMI');
+ const foreign=(await db.query("select id from app.copies where institution_id='RBCP' limit 1")).rows[0].id;await assert.rejects(action('copy_institute',{id:foreign,institute:'RBCET'}),/Copy not found/);
  await action('copy_institute',{id:copies[1],institute:'RBTTI'});
 });
+
 test('single copy and bulk book creation preserve ownership and bad batches roll back',async()=>{
  await as('admin');
  await action('copy',{title_id:title,accession:'QA-NEW',barcode:'QA-NEW',institute:'RBTTI'});

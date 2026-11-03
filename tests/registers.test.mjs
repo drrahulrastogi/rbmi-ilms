@@ -63,3 +63,37 @@ test('admin edits donated and ordinary copies while preserving provenance and lo
  await assert.rejects(action('copy_edit',payload,'RBCP'),/not found/);
  }
 });
+
+
+let pendingBookEdit,approvalCopy,requestPayload;
+test('librarian submits remarks without changing live book details or bypassing approval',async()=>{
+ await as(actors.librarian);
+ const c=(await db.query('select * from app.copies where acquisition_id=$1 order by id limit 1',[acquired.id])).rows[0];const t=(await db.query('select * from app.titles where id=$1',[c.title_id])).rows[0];approvalCopy=c;
+ requestPayload={...t,...c,title:t.title+' corrected',author:t.author,accession:c.accession+'-FIX',barcode:c.barcode+'-FIX',shelf:'Proposed shelf',price:43,remarks:'Correct details after checking the original donated book',request_key:randomUUID()};
+ await assert.rejects(action('book_edit_request',{...requestPayload,remarks:' '}),/remarks are required/);
+ await assert.rejects(action('title',{...t,title:'Unapproved change'}),/admin-approved/);
+ await assert.rejects(action('copy_status',{id:c.id,status:'lost',reason:'bypass'}),/admin-approved/);
+ pendingBookEdit=await action('book_edit_request',requestPayload);assert.equal(pendingBookEdit.status,'pending');assert.match(pendingBookEdit.request_no,/RBCET-EDIT-/);assert.equal((await action('book_edit_request',requestPayload)).id,pendingBookEdit.id);
+ assert.equal((await db.query('select title from app.titles where id=$1',[t.id])).rows[0].title,t.title);assert.equal((await db.query('select accession from app.copies where id=$1',[c.id])).rows[0].accession,c.accession);
+ await assert.rejects(action('book_edit_approve',{id:pendingBookEdit.id}),/Access denied/);
+});
+test('only admin approval applies the full request and records the complete decision',async()=>{
+ await as(actors.admin);await action('book_edit_approve',{id:pendingBookEdit.id,message:'Checked original book; approved'});
+ const c=(await db.query('select * from app.copies where id=$1',[approvalCopy.id])).rows[0];assert.equal(c.accession,requestPayload.accession);assert.equal(c.shelf,'Proposed shelf');assert.equal(c.acquisition_id,approvalCopy.acquisition_id);assert.equal(c.status,approvalCopy.status);
+ assert.equal((await db.query('select title from app.titles where id=$1',[c.title_id])).rows[0].title,requestPayload.title);
+ await as(actors.librarian);const history=(await db.query("select public.library_book_edits('RBCET','approved',null,100) d")).rows[0].d;const r=history.rows.find(r=>r.id===pendingBookEdit.id);assert.equal(r.status,'approved');assert.equal(r.review_message,'Checked original book; approved');assert.ok(r.reviewed_by_name&&r.reviewed_at&&r.requested_by_name);assert.equal(r.original_copy.accession,approvalCopy.accession);
+});
+test('rejection requires a message, keeps the book unchanged and remains in history',async()=>{
+ await as(actors.librarian);const p={...requestPayload,title:'Do not apply rejected title',remarks:'Propose a different spelling',request_key:randomUUID()};const request=await action('book_edit_request',p);
+ await as(actors.admin);await assert.rejects(action('book_edit_reject',{id:request.id,message:' '}),/rejection message is required/);await action('book_edit_reject',{id:request.id,message:'Please verify the title page and resubmit'});
+ assert.equal((await db.query('select title from app.titles where id=$1',[approvalCopy.title_id])).rows[0].title,requestPayload.title);
+ await as(actors.librarian);const r=(await db.query("select public.library_book_edits('RBCET','rejected',null,100) d")).rows[0].d.rows.find(r=>r.id===request.id);assert.equal(r.review_message,'Please verify the title page and resubmit');
+ await as(actors.accountant);await assert.rejects(db.query("select public.library_book_edits('RBCET','all',null,100)"),/Access denied/);await as(actors.librarian);await assert.rejects(db.query("select public.library_book_edits('RBCP','all',null,100)"),/Access denied/);
+ await db.exec('set role authenticated');try{await assert.rejects(db.query('select * from app.book_edits'),/permission denied/);}finally{await db.exec('reset role');}
+});
+test('stale approval cannot overwrite a newer admin correction',async()=>{
+ await as(actors.librarian);const r=await action('book_edit_request',{...requestPayload,title:'Stale request',remarks:'Old proposed correction',request_key:randomUUID()});
+ await as(actors.admin);await action('copy_edit',{...requestPayload,shelf:'Newer admin correction',reason:'Correct location after request'});
+ await assert.rejects(action('book_edit_approve',{id:r.id,message:'approve'}),/changed since this request/);
+ assert.equal((await db.query('select shelf from app.copies where id=$1',[approvalCopy.id])).rows[0].shelf,'Newer admin correction');await action('book_edit_reject',{id:r.id,message:'Location was corrected separately; submit a fresh request'});
+});
