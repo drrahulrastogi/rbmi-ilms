@@ -11,7 +11,7 @@ import {CourseSettings} from './CourseSettings';
 import {studentStatus,completionDate,admissionYear} from './student-lifecycle.mjs';
 import {recoveryEntry} from './api';
 import {isCurrentSession,isSessionFailure} from './session-flow.mjs';
-import {selectWorkspaceInstitution} from './workspace-selection.mjs';
+import {selectWorkspaceInstitution,createWorkspaceRequestGuard} from './workspace-selection.mjs';
 import {IssueForm} from './IssueForm';
 import {InstituteFilter} from './InstituteFilter';
 import {catalogueTitles,instituteCopies,catalogueExportRows} from './catalogue-institutes.mjs';
@@ -53,6 +53,9 @@ function App(){
  useEffect(()=>setCardPatron(null),[institution,session?.user?.id]);
  const activeTokenRef=useRef(null);activeTokenRef.current=signingOut?null:demo?'demo':session?.access_token||null;
  const activeUserRef=useRef(null);activeUserRef.current=signingOut?null:demo?'demo':session?.user?.id||null;
+ const workspaceScope=useRef(null),workspaceRequests=useRef(null);
+ workspaceScope.current={institution,owner:activeUserRef.current,token:activeTokenRef.current};
+ if(!workspaceRequests.current)workspaceRequests.current=createWorkspaceRequestGuard(()=>workspaceScope.current);
  const membership=(demo||membersOwnerId===session?.user?.id)?members.find(m=>m.institution_id===institution):undefined,role=(membership?.role||'').trim().toLowerCase(),admin=role==='admin',accountant=role==='accountant',manage=['admin','librarian'].includes(role),circ=['admin','librarian','assistant'].includes(role)&&(role==='admin'||data.module_permissions?.modules?.includes('Circulation')),finance=['admin','librarian','accountant'].includes(role),staff=['admin','librarian','assistant','accountant','auditor'].includes(role)||data.module_staff_view===true,patron=!staff;
  const canModule=name=>admin||Boolean(data.module_permissions?.modules?.includes(name));
  const visiblePages=pages.filter(([p])=>canModule(p)&&(p!=='Permissions'||admin)&&(!patron||['Overview','Catalogue','Circulation','Holds','Fines','Search','Lists'].includes(p)));
@@ -73,16 +76,20 @@ function App(){
    }
    const b=await rpc('library_bootstrap');if(!current())return;setMembers(b.memberships);setMembersOwnerId(owner);
    if(!b.memberships.length){setData(empty);throw new Error('No institution membership. Ask an administrator to assign your Auth user UUID.');}
-   const i=selectWorkspaceInstitution(b.memberships,membersOwnerId===owner?institution:undefined);setInstitution(i);await load(i,owner,token);
+   const i=selectWorkspaceInstitution(b.memberships,membersOwnerId===owner?institution:undefined);workspaceScope.current={...workspaceScope.current,institution:i};setInstitution(i);await load(i,owner,token);
   }catch(e){if(current())setError(e.message);}finally{if(current())setLoading(false);}
  }
  async function load(i=institution,owner=activeUserRef.current,token=activeTokenRef.current){
+  const current=workspaceRequests.current.begin({institution:i,owner,token});
   async function collection(kind){let all=[],after_id=null;do{const p=await rpc('library_collection_page',{i,kind,after_id,page_size:5000});all.push(...p.rows);after_id=p.next_id;}while(after_id);return all;}
+  try{
   const d=await rpc('library_workspace',{i});
-  if(d.accountant_only){if(isCurrentSession(owner,token,activeUserRef.current,activeTokenRef.current))setData({...empty,...d});return;}
+  if(!current())return;
+  if(d.accountant_only){setData({...empty,...d});return;}
   const readable=kind=>d.readable_datasets?.includes(kind);
   const [titles,copies,coursePolicies]=await Promise.all([readable('titles')?collection('titles'):[],readable('copies')?collection('copies'):[],readable('course_policies')?rpc('library_course_policies',{i}):[]]);
-  if(!isCurrentSession(owner,token,activeUserRef.current,activeTokenRef.current))return;setData({...empty,...d,titles,copies,course_policies:coursePolicies});setError('');
+  if(!current())return;setData({...empty,...d,titles,copies,course_policies:coursePolicies});setError('');
+  }catch(e){if(current())throw e;}
  }
  useEffect(()=>{if(demo){boot();return;}supabase.auth.getSession().then(({data,error})=>{setSession(error?null:data.session);setReady(true);}).catch(()=>{setSession(null);setReady(true);});const {data:sub}=supabase.auth.onAuthStateChange((event,s)=>{setSession(s);if(!s){setMembers([]);setMembersOwnerId(null);setPage('Overview');setDrawer(null);setImporter(null);setAccountResults([]);setData(empty);setRequiresPassword(false);}if(event==='PASSWORD_RECOVERY'){setRecovery(true);setRecoverySession(true);}});return()=>sub.subscription.unsubscribe();},[]);
  useEffect(()=>{if(!demo&&session?.user?.id&&!opac&&!recovery){setPage('Overview');setDrawer(null);setImporter(null);boot();}},[session?.access_token,opac,recovery]);
@@ -124,7 +131,7 @@ function App(){
  const loans=data.loans.filter(l=>!l.returned),overdue=loans.filter(l=>l.due<today());const outstanding=data.counts?.fine_balance??data.fines.reduce((a,f)=>a+balance(f),0);
  const find=rows=>rows.filter(r=>JSON.stringify(r).toLowerCase().includes(search.toLowerCase()));
  const searchedTitles=useMemo(()=>catalogueTitles(data.titles,data.copies,search,catalogueInstitute),[data.titles,data.copies,search,catalogueInstitute]);
- async function changeInstitution(i){setAccountResults([]);setInstitution(i);setSearch('');setLoading(true);setError('');try{await load(i);}catch(e){setError(e.message);}finally{setLoading(false);}}
+ async function changeInstitution(i){workspaceScope.current={...workspaceScope.current,institution:i};workspaceRequests.current.invalidate();setData(empty);setDrawer(null);setImporter(null);setCardPatron(null);setPaymentPrint(null);setAccountResults([]);setInstitution(i);setSearch('');setLoading(true);setError('');try{await load(i);}catch(e){if(workspaceScope.current.institution===i)setError(e.message);}finally{if(workspaceScope.current.institution===i)setLoading(false);}}
  if(import.meta.env.DEV&&new URLSearchParams(location.search).get('manual-preview')==='login')return <Login onLogin={()=>{}} onForgot={()=>{}}/>;
  if(import.meta.env.DEV&&new URLSearchParams(location.search).get('manual-preview')==='forgot')return <ForgotPassword onBack={()=>{}}/>;
  if(import.meta.env.DEV&&new URLSearchParams(location.search).get('manual-preview')==='first-login')return <FirstLogin onFinish={()=>{}}/>;
